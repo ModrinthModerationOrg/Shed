@@ -1,3 +1,11 @@
+/**
+ * An API for MIME type information.
+ *
+ * @author Robert Kieffer
+ * @license MIT
+ *
+ * @module
+ */
 export type TypeMap = {
     [key: string]: string[];
 };
