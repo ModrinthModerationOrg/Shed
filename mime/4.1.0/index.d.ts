@@ -13,7 +13,7 @@ export default class Mime {
      * e.g. mime.define({'audio/ogg', ['oga', 'ogg', 'spx']});
      *
      * If a mapping for an extension has already been defined an error will be
-     * thrown unless the `force` argument is set to `true`.
+     * thrown unless the 'force' argument is set to 'true'.
      *
      * e.g. mime.define({'audio/wav', ['wav']}, {'audio/x-wav', ['*wav']});
      */
