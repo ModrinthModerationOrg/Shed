@@ -4,7 +4,7 @@
  */
 
 /**
- * The `unsafeWindow` object provides full access to the pages javascript functions and variables.
+ * The 'unsafeWindow' object provides full access to the pages javascript functions and variables.
  * @type {Window}
  */
 declare var unsafeWindow: Window;
@@ -66,14 +66,14 @@ declare function GM_download(details: {
 } | string, name?: string): void;
 
 /**
- * Gets the text of a predefined `@resource` tag.
+ * Gets the text of a predefined '@resource' tag.
  * @param {string} name - The name of the resource.
  * @returns {string} The text content of the resource.
  */
 declare function GM_getResourceText(name: string): string;
 
 /**
- * Gets the base64 encoded URI of a predefined `@resource` tag.
+ * Gets the base64 encoded URI of a predefined '@resource' tag.
  * @param {string} name - The name of the resource.
  * @returns {string} The resource URL.
  */
@@ -88,7 +88,7 @@ declare function GM_log(message: any): void;
 /**
  * Shows a HTML5 Desktop notification and/or highlights the current tab.
  * @param {Object|string} details - A details object, or the text of the notification.
- * @param {Function|string} [ondone_or_title] - The `ondone` callback, or the title of the notification.
+ * @param {Function|string} [ondone_or_title] - The 'ondone' callback, or the title of the notification.
  * @param {string} [image] - The URL of an image to display in the notification.
  * @param {Function} [onclick] - A callback function that will be called when the user clicks on the notification.
  */
@@ -108,7 +108,7 @@ declare function GM_notification(details: {
  * Opens a new tab with the given URL.
  * @param {string} url - The URL to open.
  * @param {Object|boolean} [options] - Options object (active, insert, setParent) or a boolean indicating if it should load in background.
- * @returns {Object} An object with a `close` function, an `onclose` listener, and a `closed` boolean.
+ * @returns {Object} An object with a 'close' function, an 'onclose' listener, and a 'closed' boolean.
  */
 declare function GM_openInTab(url: string, options?: {
     active?: boolean;
@@ -120,7 +120,7 @@ declare function GM_openInTab(url: string, options?: {
  * Registers a menu command to be displayed in the Tampermonkey menu.
  * @param {string} name - The name to display in the menu.
  * @param {Function} callback - The function to execute when clicked.
- * @param {Object|string} [options_or_accessKey] - Options object (e.g., `accessKey`, `autoClose`, `title`) or just the accessKey string.
+ * @param {Object|string} [options_or_accessKey] - Options object (e.g., 'accessKey', 'autoClose', 'title') or just the accessKey string.
  * @returns {number} The menu command ID.
  */
 declare function GM_registerMenuCommand(name: string, callback: (MouseEvent: MouseEvent | KeyboardEvent) => void, options_or_accessKey?: {
@@ -131,7 +131,7 @@ declare function GM_registerMenuCommand(name: string, callback: (MouseEvent: Mou
 } | string): number;
 
 /**
- * Unregisters a menu command that was previously registered by `GM_registerMenuCommand`.
+ * Unregisters a menu command that was previously registered by 'GM_registerMenuCommand'.
  * @param {number} menuCmdId - The ID of the menu command to unregister.
  */
 declare function GM_unregisterMenuCommand(menuCmdId: number): void;
@@ -139,7 +139,7 @@ declare function GM_unregisterMenuCommand(menuCmdId: number): void;
 /**
  * Sets the clipboard data.
  * @param {string} data - The data to place on the clipboard.
- * @param {string|Object} [info] - The MIME type (e.g., 'text/plain') or an object `{ type: 'text', mimetype: 'text/plain' }`.
+ * @param {string|Object} [info] - The MIME type (e.g., 'text/plain') or an object '{ type: 'text', mimetype: 'text/plain' }'.
  * @param {Function} [cb] - A callback function that is called when the clipboard has been set.
  */
 declare function GM_setClipboard(data: string, info?: string | { type: string, mimetype: string }, cb?: Function): void;
@@ -193,7 +193,7 @@ declare function GM_listValues(): string[];
 /**
  * Adds a change listener to the storage that triggers when the value of the key changes.
  * @param {string} key - The key to listen for changes.
- * @param {Function} listener - Callback: `(key, old_value, new_value, remote) => void`
+ * @param {Function} listener - Callback: '(key, old_value, new_value, remote) => void'
  * @returns {number} The listener ID.
  */
 declare function GM_addValueChangeListener(key: string, listener: (key: string, old_value: any, new_value: any, remote: boolean) => void): number;
@@ -207,7 +207,7 @@ declare function GM_removeValueChangeListener(listenerId: number): void;
 /**
  * Makes an XML HTTP request, bypassing cross-origin restrictions.
  * @param {Object} details - The request details.
- * @returns {Object} An object with an `abort` method.
+ * @returns {Object} An object with an 'abort' method.
  */
 declare function GM_xmlhttpRequest(details: {
     method?: string;
