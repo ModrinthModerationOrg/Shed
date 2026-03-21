@@ -6,6 +6,10 @@
  *
  * @module
  */
+
+/**
+ * Internal Map type used as the primary inner method to store mime types
+ */
 export type TypeMap = {
     [key: string]: string[];
 };
