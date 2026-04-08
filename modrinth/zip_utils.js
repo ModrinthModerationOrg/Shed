@@ -332,6 +332,22 @@ function createZipReader(reader) { return new ZipReader(reader) };
  */
 //#endregion
 
+/**
+ * @param {ZipTreeNode} node
+ * @returns {FileEntry?}
+ */
+function fileOrNull(node) {
+    return !node.zipEntry.directory ? node.zipEntry : null;
+}
+
+/**
+ * @param {ZipTreeNode} node
+ * @returns {DirectoryEntry?}
+ */
+function dirOrNull(node) {
+    return node.zipEntry.directory ? node.zipEntry : null;
+}
+
 //#region Zip Tree Methods
 /**
  * Method used to generate the zip tree of the given blob returning the root node of the entire zip file
