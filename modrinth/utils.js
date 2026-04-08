@@ -126,7 +126,8 @@ class StateManager {
                     console.log(`Moving from '${this.url}' to '${window.location.href}'`);
                     this.url = window.location.href;
 
-                    setTimeout(this.#handleUrlChange, 100);
+                    // DO NOT UNDO LAMDA HERE AS IT FREAKS OUT FYI
+                    setTimeout(async () => this.#handleUrlChange(), 100);
                 }
             }, 100);
         }).observe(document.body, { childList: true, subtree: true });
@@ -316,7 +317,7 @@ const app = {
             console.log(logMsg);
         }
 
-        if (type == MessageType.DEBUG && this.showDebugToast()) return;
+        if (type == MessageType.DEBUG && !this.showDebugToast()) return;
 
         this.notificationManager().then((manager) => {
             manager.addNotification({ title: title, text: msg, type: type.name });
@@ -373,8 +374,10 @@ const app = {
     async labrinthGetRequest(path, params, body, headers, skipAuth) {
         return await this.request('labrinth', 3, 'GET', path, params, body, headers, skipAuth)
     },
-    state: await new StateManager().initManager()
+    state: new StateManager()
 }
+
+await app.state.initManager();
 
 function waitForElementValue(selector, getter, interval = 100) {
     return new Promise((resolve) => {
