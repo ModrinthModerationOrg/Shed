@@ -245,6 +245,24 @@ const MessageType = Object.freeze({
     WARN: { name: "warn", hex: "#ff0" }
 });
 
+/**
+ * @typedef DonationLink
+ * @type {object}
+ * @property {string} id - id for the donation service
+ * @property {string} platform - platform name for the donation service
+ * @property {string} url - url for the donation service
+ */
+
+function getSlugFromURL(/*** @type {string} */ url){
+    const parts = url.replace("https://", "").split('/');
+    const slug = (parts[2] == 'technical-review') ? parts[3] : parts[2];
+    if (slug == null) {
+        app.debug("[Modrinth Id/Slug Grabber] Could not parse slug from URL.");
+        return null;
+    }
+    return slug;
+}
+
 const app = {
     /** 
      * @private
