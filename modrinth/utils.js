@@ -433,3 +433,108 @@ async function getModrinthProject(id) {
         return { id: id }
     });
 }
+
+/**
+ * Method used to send http requests from within this tamper monkey script
+ * 
+ * @param {string}                                                                     url - url target for the request
+ * @param {{[key: string]: string;} | undefined}                                    header - extra headers (auth is added automatically!)
+ * @returns {Promise<Blob | undefined>}
+ */
+async function getBlob(url, header) {
+    return await httpGETRequest("blob", url, header, (response) => response.response, (msg) => {
+        app.error("Blob Fetcher", `Unable to get the desired blob from '${url}' due to the following error: ${msg}`)
+        return null;
+    });
+}
+
+/**
+ * Method used to send http requests from within this tamper monkey script
+ * 
+ * @param {string}                                                                     url - url target for the request
+ * @param {{[key: string]: string} | undefined}                                    header - extra headers (auth is added automatically!)
+ * @returns {Promise<ArrayBuffer | undefined>}
+ */
+async function getArrayBuffer(url, header) {
+    return await httpGETRequest("arraybuffer", url, header, (response) => response.response, (msg) => {
+        app.error("ArrayBuffer Fetcher", `Unable to get the desired array buffer from '${url}' due to the following error: ${msg}`)
+        return null;
+    });
+}
+
+function generalStatusCodeRange(status) {
+    return status >= 200 && status < 300
+}
+
+/**
+ * Method used to send http requests from within this tamper monkey script
+ * 
+ * @template T
+ * @param {"arraybuffer", "blob", "json", "stream", "text" or undefined}              type - type of data to be returned from the response
+ * @param {string}                                                                     url - url target for the request
+ * @param {{[key: string]: string} | undefined}                                    header - extra headers (auth is added automatically!)
+ * @param {Func<Object, T>}                                                        handler - Function that handles the response data and turns it into the required data
+ * @param {Func<string|number, T>}                                                 onError - Function to handle errors of either caused by the handling of the response or from the request call
+ * @returns {Promise<T>}
+ */
+async function httpGETRequest(type, url, header, handler, onError) {
+    return await validHttpRequestOf("get", type, url, header, null, handler, onError);
+}
+
+/**
+ * Method used to send http requests from within this tamper monkey script
+ * 
+ * @template T
+ * @param {string}                                                                  method - method request type either being GET, POST, PATCH, or DELETE
+ * @param {"arraybuffer" | "blob" | "json" | "stream" | "text" | undefined}           type - type of data to be returned from the response
+ * @param {string}                                                                     url - url target for the request
+ * @param {{[key: string]: string} | undefined}                                    header - extra headers (auth is added automatically!)
+ * @param {string | Blob | File | Object | Array<any> | FormData | URLSearchParams | undefined}   data - request body for PATCH/POST
+ * @param {Func<Object, T>}                                                        handler - Function that handles the response data and turns it into the required data
+ * @param {Func<string|number, T>}                                                 onError - Function to handle errors of either caused by the handling of the response or from the request call
+ * @returns {Promise<T>}
+ */
+async function validHttpRequestOf(method, type, url, header, data, handler, onError) {
+    return await httpRequestOf(method, type, url, generalStatusCodeRange, header, data, handler, onError);
+}
+
+/**
+ * Method used to send http requests from within this tamper monkey script
+ * 
+ * @template T
+ * @param {string}                                                                  method - method request type either being GET, POST, PATCH, or DELETE
+ * @param {"arraybuffer" | "blob" | "json" | "stream" | "text" | undefined}           type - type of data to be returned from the response
+ * @param {string}                                                                     url - url target for the request
+ * @param {Predicate<number>}                                              allowedStatuses - test function used to check if the status is allowed or is an error
+ * @param {{[key: string]: string} | undefined}                                    header - extra headers (auth is added automatically!)
+ * @param {string | Blob | File | Object | Array<any> | FormData | URLSearchParams | undefined} data - request body for PATCH/POST
+ * @param {Func<Object, T>}                                                        handler - Function that handles the response data and turns it into the required data
+ * @param {Func<string|number, T>}                                                 onError - Function to handle errors of either caused by the handling of the response or from the request call
+ * @returns {Promise<T>}
+ */
+async function httpRequestOf(method, type, url, allowedStatuses, header, data, handler, onError) {
+    app.debug(`[${method}, ${type}]: ${url}`);
+    if (!url) return onError("Invalid URL given as its null");
+    return await new Promise((resolve, reject) => {
+        GM_xmlhttpRequest({
+            method: method, url: url, responseType: type, headers: { ...(header ?? {}) }, data: data,
+            onload: function(response) {
+                var result;
+                if (allowedStatuses(response.status)) {
+                    try {
+                        result = handler(response)
+                    } catch (error) {
+                        result = onError(error.message)
+                    }
+                } else {
+                    result = onError(response.status)
+                }
+
+                resolve(result);
+            },
+            onerror: function(error) {
+                resolve(onError(error.message))
+            }
+        });
+    });
+}
