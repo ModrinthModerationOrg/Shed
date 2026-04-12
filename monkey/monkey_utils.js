@@ -2,7 +2,7 @@
  * @template T
  */
 class Observable {
-    /** @type(Array<MutationCallback<T>>) */
+    /** @type(Array<OnMutationCallback<T>>) */
     listeners = [];
     /** @readonly @type(() => T) */
     get;
@@ -17,18 +17,18 @@ class Observable {
     constructor (getCallback, setCallback) {
         this.get = getCallback;
         this.set = (value) => {
-            if (setCallback != null) value = setCallback(value);
+            if (setCallback != null) setCallback(value);
             this.onChangeInvoker(value);
             return value;
         };
     }
 
-    /*** @type((callback: MutationCallback<T>) => void) */
+    /*** @type((callback: OnMutationCallback<T>) => void) */
     onChange = (callback) => this.listeners.push(callback);
     
     /** 
      * @protected
-     * @type(MutationCallback<T>) 
+     * @type(OnMutationCallback<T>) 
      */
     onChangeInvoker = (value) => {
         for (const callback of this.listeners) {

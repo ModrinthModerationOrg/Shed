@@ -1,4 +1,6 @@
-export type Collection<T> = {[key: string]: T} | Map<String, T> | T[];
+type Collection<T> = {[key: string]: T} | Map<String, T> | T[];
+
+type OnMutationCallback<T> = (value:T) => void;
 
 /**
  * Tampermonkey API JSDoc Definitions
