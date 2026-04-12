@@ -1,413 +1,224 @@
-//#region Zip Type Def
-/**
- * @typedef {Object} EntryMetaData
- * @property {number} offset
- * @property {string} filename
- * @property {Uint8Array} rawFilename
- * @property {boolean} filenameUTF8
- * @property {boolean} executable
- * @property {boolean} encrypted
- * @property {boolean} zipCrypto
- * @property {number} compressedSize
- * @property {number} uncompressedSize
- * @property {Date} lastModDate
- * @property {Date} [lastAccessDate]
- * @property {Date} [creationDate]
- * @property {string} comment
- * @property {number} signature
- * @property {boolean} zip64
- * @property {number} version
- * @property {number} externalFileAttributes
- * @property {number} [unixMode]
- * @property {number} compressionMethod
- */
-
-/**
- * @typedef {DirectoryBase & EntryMetaData} DirectoryEntry
- */
-
-/**
- * @typedef {Object} DirectoryBase
- * @property {true} directory
- */
-
-/**
- * @typedef {DirectoryEntry | FileEntry} Entry
- */
-
-/**
- * @template Type
- * @callback DataWriter
- * @param {Writer<Type> | WritableWriter | WritableStream | AsyncGenerator<Writer<unknown> | WritableWriter | WritableStream, boolean>} writer
- * @param {EntryGetDataCheckPasswordOptions?} options
- * @returns {Promise<Type>}
- */
-
-/**
- * @typedef {Object} FileBase
- * @property {false} directory
- * @property {DataWriter<Type>} getData
- * @property {(options?: EntryGetDataOptions) => Promise<ArrayBuffer>} arrayBuffer
- */
-
-/**
- * @typedef {FileBase & EntryMetaData} FileEntry
- */
-
-/**
- * @callback OnStart
- * @param {number} total - The total number of bytes.
- * @returns {Promise<void>|undefined}
- */
-
-/**
- * @callback OnProgress
- * @param {number} progress - The current progress in bytes.
- * @param {number} total - The total number of bytes.
- * @returns {Promise<void>|undefined}
- */
-
-/**
- * @callback OnEnd
- * @param {number} computedSize - The total number of bytes (computed).
- * @returns {Promise<void>|undefined}
- */
-
-/**
- * Options for monitoring the progress of entry data processing.
- * @typedef {Object} EntryDataOnprogressOptions
- * @property {OnStart} [onstart] 
- * @property {OnProgress} [onprogress]
- * @property {OnEnd} [onend] 
- */
-
-/**
- * Options for the ZipReader.
- * @typedef {Object} ZipReaderOptions
- * @property {boolean} [checkPasswordOnly=false] - If true, only checks the password without reading data.
- * @property {boolean} [checkSignature=false] - If true, validates the ZIP signature.
- * @property {boolean} [checkOverlappingEntry=false] - If true, checks for overlapping entries in the archive.
- * @property {boolean} [checkOverlappingEntryOnly=false] - If true, only performs the overlap check.
- * @property {string} [password] - The password used to decrypt the ZIP entries.
- * @property {boolean} [passThrough] - If true, allows data to pass through without processing.
- * @property {Uint8Array} [rawPassword] - The password provided as a raw byte array.
- * @property {AbortSignal} [signal] - An AbortSignal to cancel the reading operation.
- * @property {boolean} [preventClose=false] - If true, prevents the underlying stream from being closed automatically.
- */
-
-/**
- * Configuration for worker behavior and stream handling.
- * @typedef {Object} WorkerConfiguration
- * @property {boolean} [useWebWorkers=true] 
- * @property {boolean} [useCompressionStream=true] 
- * @property {boolean} [transferStreams=true] 
- */
-
-/**
- * Represents the options passed to {@link FileEntry#getData} and '{@link ZipFileEntry}.get*'.
- * @typedef {EntryDataOnprogressOptions & ZipReaderOptions & WorkerConfiguration} EntryGetDataOptions
- */
-
-/**
- * @typedef {EntryGetDataOptions} EntryGetDataCheckPasswordOptions
- */
-
-/**
- * An object representing a writable stream and its optional size constraints.
- * @typedef {Object} WritableWriter
- * @property {WritableStream} writable - The underlying writable stream to which data is written.
- * @property {number} [maxSize] - The maximum size (in bytes) allowed for the data. 
- * This property is optional.
- */
-
-/**
- * Interface for objects that can be initialized asynchronously.
- * @typedef {Object} Initializable
- * @property {() => Promise<void>} [init]
- * Initializes the instance asynchronously.
- */
-
-/**
- * Represents an instance used to write unknown type of data.
- *
- * Here is an example of custom {@link Writer} class used to write binary strings:
- * ```
- * class BinaryStringWriter extends Writer {
- *
- *   constructor() {
- *     super();
- *     this.binaryString = "";
- *   }
- *
- *   writeUint8Array(array) {
- *     for (let indexCharacter = 0; indexCharacter < array.length; indexCharacter++) {
- *       this.binaryString += String.fromCharCode(array[indexCharacter]);
- *     }
- *   }
- *
- *   getData() {
- *     return this.binaryString;
- *   }
- * }
- * ```
- * @template Type
- * @typedef {Object} Writer
- * @property {WritableStream} writable - The underlying writable stream.
- * @property {WriterInit} [init] 
- * @property {WriterWrite} writeUint8Array 
- * @property {WriterGetData<Type>} getData 
- */
-
-/**
- * @callback WriterInit
- * @param {number} [size] - The total size of the written data in bytes.
- * @returns {Promise<void>}
- */
-
-/**
- * @callback WriterWrite
- * @param {Uint8Array} array - The chunk data to append.
- * @returns {Promise<void>}
- */
-
-/**
- * @template Type
- * @callback WriterGetData
- * @returns {Promise<Type>}
- */
-
-/**
- * Represents an instance used to read a zip file.
- *
- * Here is an example showing how to read the text data of the first entry from a zip file:
- * ```
- * // create a BlobReader to read with a ZipReader the zip from a Blob object
- * const reader = new zip.ZipReader(new zip.BlobReader(blob));
- *
- * // get all entries from the zip
- * const entries = await reader.getEntries();
- * if (entries.length) {
- *
- *   // get first entry content as text by using a TextWriter
- *   const text = await entries[0].getData(
- *     // writer
- *     new zip.TextWriter(),
- *     // options
- *     {
- *       onprogress: (index, max) => {
- *         // onprogress callback
- *       }
- *     }
- *   );
- *   // text contains the entry data as a String
- *   console.log(text);
- * }
- *
- * // close the ZipReader
- * await reader.close();
- * ```
- * @typedef {Object} ZipReader
- * @property {Uint8Array} comment
- * @property {Uint8Array?} prependedData
- * @property {Uint8Array?} appendedData
- * @property {(options?: ZipReaderGetEntriesOptions) => Promise<Entry[]>} getEntries
- * @property {(options?: ZipReaderGetEntriesOptions) => AsyncGenerator<Entry, boolean>} getEntriesGenerator
- * @property {() => Promise<void>} close
- */ 
-
-/**
- * Represents a {@link Reader} instance used to read data provided as a 'Blob' instance.
- * @typedef {Reader<Blob>} BlobReader
- */
-
-/**
- * Represents an instance used to read unknown type of data.
- *
- * Here is an example of custom {@link Reader} class used to read binary strings:
- * ```
- * class BinaryStringReader extends Reader {
- *
- *   constructor(binaryString) {
- *     super();
- *     this.binaryString = binaryString;
- *   }
- *
- *   init() {
- *     super.init();
- *     this.size = this.binaryString.length;
- *   }
- *
- *   readUint8Array(offset, length) {
- *     const result = new Uint8Array(length);
- *     for (let indexCharacter = 0; indexCharacter < length; indexCharacter++) {
- *       result[indexCharacter] = this.binaryString.charCodeAt(indexCharacter + offset) & 0xFF;
- *     }
- *     return result;
- *   }
- * }
- * ```
- * @template Type
- * @typedef {Object} Reader
- * @property {ReadableStream} readable - The 'ReadableStream' instance.
- * @property {number} size - The total size of the data in bytes.
- * @property {ReaderInit} [init] - Initializes the instance asynchronously.
- * @property {ReaderRead} readUint8Array - Reads a specific chunk of data.
- */
-
-/**
- * Initializes the instance asynchronously
- * @callback ReaderInit
- * @returns {Promise<void>}
- */
-
-/**
- * Reads a chunk of data
- * @callback ReaderRead
- * @param {number} index - The byte index of the data to read.
- * @param {number} length - The length of the data to read in bytes.
- * @returns {Promise<Uint8Array>} A promise resolving to a chunk of data. 
- * The data must be truncated to the remaining size if the requested length 
- * is larger than the remaining size.
- */
-
-/**
- * Represents an instance used to read data from a ReadableStream instance.
- * @typedef {Object} ReadableReader
- * @property {ReadableStream} readable - The ReadableStream instance.
- */
-//#endregion
-
 //#region Zip Method Imports
-const { BlobReader, ZipReader } = await import("https://esm.sh/@zip.js/zip.js@2.8.23");
-
+/** @import * as ZipJS from './index' */
 /** 
- * @function BlobReader 
- * @param {Blob} blob
- * @returns {BlobReader}
-*/
-function createBlobReader(blob) { return new BlobReader(blob) };
+ * @type { ZipJS }
+ */
+const { BlobReader, ZipReader, BlobWriter, ZipWriter } = await import("https://esm.sh/@zip.js/zip.js@2.8.23");
 
-/** 
- * @template Type
- * @param {Reader<Type>} reader
- * @returns {ZipReader}
-*/
-function createZipReader(reader) { return new ZipReader(reader) };
 //#endregion
 
 //#region TreeNode Type Def
-/**
- * Node entry of within a tree
- * @template {TreeNode} N
- * @typedef TreeNode
- * @property {"root"|"zip"|"file"|"directory"} type
- * @property {TreeNode?} parent
- * @property {{[key: string]: N}} children
- */
+
 
 /**
- * Node entry of within a tree
- * @template {TreeNode} N
- * @typedef {TreeNode<N> & RootNodeBase<N>} RootTreeNode
+ * Root tree node — extends TreeNode with a flat entries list.
+ * @template {TreeNode<N>} N
  */
+class TreeNode {
+    /** @type {TreeNode<N>?} */
+    parent;
+
+    /** @type {Map<string, N>} */
+    children = new Map();
+
+    /** @type {string} */
+    name;
+
+    /** @type {string} */
+    path;
+
+    /**
+     * @param {string} name
+     * @param {string} path
+     * @param {TreeNode<N>?} parent
+     */
+    constructor(parent, name, path) {
+        this.parent = parent;
+        this.name = name;
+        this.path = path;
+    }
+}
 
 /**
- * Node entry of within a tree
- * @template {TreeNode} N
- * @typedef RootNodeBase
- * @property {Array<N>} entries
+ * Root tree node — extends TreeNode with a flat entries list.
+ * @implements {ZipTreeNode}
  */
+class RootZipTreeNode extends ZipTreeNode {
+    /** @type(Map<string, ZipTreeNode>) */
+    entries = new Map();
+
+    /**
+     * @param {string} name
+     * @param {string} path
+     */
+    constructor() {
+        super(null, null, "", "", null, "root", null);
+    }
+
+    /**
+     * @param {ZipTreeNode} node 
+     */
+    addNodeToTree(node) {
+        this.entries.set(node.path, node)
+        return node;
+    }
+
+    /**
+     * @param {ZipTreeNode} node 
+     */
+    removeNodeFromTree(node) {
+        this.entries.set(node.path, node)
+        return node;
+    }
+}
 
 /**
- * Node entry of within a tree
- * @typedef {TreeNode<ZipNodeBase> & ZipNodeBase} ZipTreeNode
+ * Zip tree node — extends TreeNode with blob accessor and metadata.
+ * @extends {TreeNode<ZipTreeNode>}
+ * @implements {ZipTreeNode}
  */
+class ZipTreeNode extends TreeNode {
+    /** RootZipTreeNode */
+    root;
+    type;
+    /** @type {() => Promise<Blob|null>} */
+    blob;
+    /** @type {ZipJS.EntryMetaData} */
+    metadata;
 
-/**
- * Node entry of within a tree
- * @typedef ZipNodeBase
- * @property {string} name
- * @property {string} path
- * @property {Entry} zipEntry
- */
+    /**
+     * @param {RootZipTreeNode} root
+     * @param {ZipTreeNode} parent
+     * @param {string} name
+     * @param {string} path
+     * @param {(() => Promise<Blob|null>)?} blob
+     * @param {("zip" | "file" | "directory")?} type
+     * @param {EntryMetaData?} metadata
+     */
+    constructor(root, parent, name, path, blob, type, metadata) {
+        super(parent, name, path);
+        this.root = root;
+        this.type = type ?? (blob == null ? "directory" : /\.(ear|war|jar|zip|mrpack)$/.test(name) ? "zip" : "file");
+        this.blob = blob ?? (() => null);
+        this.metadata = {
+            ...(metadata ?? {}),
+            directory: type == "directory"
+        };
+    }
+
+    remove() {
+        this.children.delete(this.name);
+
+        this.root.removeNodeFromTree(segmentObject)
+    };
+
+    /**
+     * @param {string} name 
+     * @param {(() => Promise<Blob|null>)?} blob 
+     * @param {string?} type 
+     * @param {ZipJS.EntryMetaData?} metadata 
+     */
+    add(name, blob = null, type = null, metadata = null) {
+        this.children.get(name)?.remove();
+        const node = new ZipTreeNode(this.root, this, name, this.path + "/" + name, blob, type, metadata);
+        this.children.set(name, node);
+        this.root.addNodeToTree(node);
+        return node;
+    };
+}
+
 //#endregion
 
 /**
  * @param {ZipTreeNode} node
- * @returns {FileEntry?}
+ * @returns {ZipJS.FileEntry?}
  */
 function fileOrNull(node) {
-    return !node.zipEntry.directory ? node.zipEntry : null;
+    return !node.metadata.directory ? node.metadata : null;
 }
 
 /**
  * @param {ZipTreeNode} node
- * @returns {DirectoryEntry?}
+ * @returns {ZipJS.DirectoryEntry?}
  */
 function dirOrNull(node) {
-    return node.zipEntry.directory ? node.zipEntry : null;
+    return node.metadata.directory ? node.metadata : null;
 }
 
 //#region Zip Tree Methods
 /**
  * Method used to generate the zip tree of the given blob returning the root node of the entire zip file
  * @param {Blob} zipBlob
- * @returns {Promise<RootTreeNode<ZipTreeNode>>}
+ * @returns {Promise<RootZipTreeNode>>}
  */
-async function generateZipTree(zipBlob) {
-    /** @type {Array<TreeNode>} */
-    const entries = [];
-    /** @type {RootTreeNode<ZipTreeNode>} */
-    const root = {
-        type: "root",
-        children: {},
-        entries: entries,
-    };
-    return await readZipDataToNode(root, zipBlob, (node) => entries.push(node));
+async function readZipTree(zipBlob) {
+    const root = new RootZipTreeNode();
+    return await readZipDataToNode(root, root, zipBlob, (node) => root.entries.set(node.path, node), (node) => root.entries.delete(node.path));
+}
+
+/**
+ * @param {RootZipTreeNode} node
+ * @returns {Blob|undefined}
+ */
+async function writeZipTree(node, mimeType) {
+    const zip = new ZipWriter(new BlobWriter(mimeType));
+
+    if (node.type == "directory") {
+        const children = node.children
+        for (const node of Object.values(children)) {
+            const blob = await node.blob();
+            const reader = blob != null ? new BlobReader(blob) : null;
+            await zip.add(node.path, reader, node.metadata);
+        }
+    }
+    
+    return await zip.close();
 }
 
 /**
  * Method used to read the current zipBlob into the given root node which can be a root node or the root node of a new inner zip file
- * @param {TreeNode<ZipTreeNode>} root
+ * @param {RootZipTreeNode} root
+ * @param {ZipTreeNode} baseNode
  * @param {Blob} zipBlob
- * @param {(TreeNode) => void} addCallback
  * @returns {Promise<TreeNode<ZipTreeNode>>}
  */
-async function readZipDataToNode(root, zipBlob, addCallback) {
-    const zip = createZipReader(createBlobReader(zipBlob));
+async function readZipDataToNode(rootNode, baseNode, zipBlob) {
+    const zip = new ZipReader(new BlobReader(zipBlob));
 
     for (const entry of await zip.getEntries()) {
-        const path = entry.filename;
-        const segments = path.split('/').filter(Boolean); // Remove empty strings from trailing slashes
+        const segments = entry.filename.split('/').filter(Boolean); // Remove empty strings from trailing slashes
 
-        let currentLevel = root;
+        let currentLevel = baseNode;
+
+        var path = "";
 
         for (const [index, segment] of segments.entries()) {
+            path = path.length == 0 ? segment : `${path}/${segment}`;
+
             var segmentObject = currentLevel.children[segment];
+
             if (!segmentObject) {
                 // Check if it's a file (last segment and not marked as a directory)
                 const isFile = (index === segments.length - 1) && !entry.directory;
 
-                segmentObject = /** @type {ZipTreeNode} */ {
-                    parent: currentLevel,
-                    children: {},
-                    type: isFile ? (/\.(ear|war|jar|zip|mrpack)$/.test(path) ? "zip" : "file") : "directory",
-                    name: segment,
-                    path: path,
-                    zipEntry: entry
-                };
-                addCallback(segmentObject)
-                currentLevel.children[segment] = segmentObject;
+                segmentObject = currentLevel.add(segment, 
+                    (entry.filename == path) ? async () => {
+                        const buffer = await fileOrNull(segmentObject)?.arrayBuffer()
+                        return buffer != null ? new Blob(buffer) : null;
+                    } : null, 
+                    isFile ? (/\.(ear|war|jar|zip|mrpack)$/.test(path) ? "zip" : "file") : "directory",
+                    entry
+                );
             }
 
             // Move pointer deeper into the tree if it's a directory
             if (segmentObject.type === 'directory') {
                 currentLevel = segmentObject;
-            } else if(segmentObject.type === 'zip' && !segmentObject.zipEntry.encrypted) {
-                await readZipDataToNode(segmentObject, new Blob([await fileOrNull(segmentObject)?.arrayBuffer()]), addCallback);
+            } else if(segmentObject.type === 'zip' && !segmentObject.metadata.encrypted) {
+                await readZipDataToNode(rootNode, segmentObject, new Blob([await fileOrNull(segmentObject)?.arrayBuffer()]), addCallback);
             }
         }
     }
 
-    return root;
+    return baseNode;
 }
