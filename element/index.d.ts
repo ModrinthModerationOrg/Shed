@@ -7,6 +7,15 @@ interface ElementOptions {
     style: StyleHandler?;
 }
 
+interface ToggleStyler {
+    initialStyles: (value: boolean) => {btnStyle: StyleHandler, spanStyle: StyleHandler}
+    onChangeStyler: (value: boolean, btn: HTMLButtonElement, span: HTMLSpanElement) => void;
+}
+
+interface Elements {
+    modal(title: string|Element, consumer: (elements: {dialog: HTMLDialogElement, parent: HTMLDivElement, title: HTMLHeadingElement, closeBtn: HTMLButtonElement}) => void): Promise<HTMLDialogElement>;
+}
+
 interface Element {
     /**
      * Method used to add a child element with custom CSS within javascript land
@@ -21,16 +30,21 @@ interface Element {
     header(type: string|number, text: string): HTMLHeadingElement;
     collapsible(tooltip: string, consumer: (parent: HTMLDivElement) => void): HTMLDivElement;
 
-    async modal(title: string|Element, consumer: (elements: {dialog: HTMLDialogElement, parent: HTMLDivElement, title: HTMLHeadingElement, closeBtn: HTMLButtonElement}) => void): Promise<HTMLDialogElement>;
     detail(title: string, titleClassName: string?): HTMLDetailsElement;
     editBox(innerText: string, canEditContents: boolean): HTMLDivElement;
 
     btn(name: string, color: string, action: (btn: HTMLButtonElement, ev: PointerEvent) => any): HTMLButtonElement
-    toggleBtn(id: string, value: boolean, onToggle: (value: boolean) => void): HTMLButtonElement;
+    toggleBtn(id: string, value: boolean, onToggle: (value: boolean, btn: HTMLButtonElement, span: HTMLSpanElement) => void, styler: ToggleStyler): HTMLButtonElement;
 
     selection<T>(options: Collection<T>, defaultOption: string|number|T, entryHandler: EntryHandler?): ElementObserverable<HTMLSelectElement, T>
     dataListInput(id: string, options: Collection<string>, entryHandler: EntryHandler?): HTMLInputElement;
     input(type: string, placeholder: string, defaultValue: string): HTMLInputElement;
+}
+
+type StyleData = {
+    className: string?,
+    classList: string[]?,
+    style: CSSStyleDeclaration?
 }
 
 type StyleHandler = {
@@ -79,8 +93,9 @@ interface ThemeStorage {
     static onCreationCallback(callback: (storage: ThemeStorage) => void);
 
     identifier: ThemeId;
-    styleAppliers: {[key: StyleId]: CSSStyleDeclaration};
-    baseStyle: CSSStyleDeclaration?;
+    styleAppliers: {[key: StyleId]: StyleData};
+    baseStyle: StyleData?;
+    toggleStyler: ToggleStyler;
     styleSheetSupplier: (string | string[])?;
 }
 
@@ -118,6 +133,6 @@ interface HTMLDialogElement {
     private onOpenModalCallbacks: Array<(HTMLDialogElement) => void>;
     private onCloseModalCallbacks: Array<(HTMLDialogElement) => void>;
 
-    onOpen(callback: (HTMLDialogElement) => void): void;
-    onClose(callback: (HTMLDialogElement) => void): void;
+    onOpen(callback: (element: HTMLDialogElement) => void): void;
+    onClose(callback: (element: HTMLDialogElement) => void): void;
 }
