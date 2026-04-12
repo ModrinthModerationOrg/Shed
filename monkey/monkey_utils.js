@@ -1,8 +1,17 @@
 /**
+ * Represents a function that accepts one argument and produces a result.
+ * 
+ * @template T
+ * @callback OnMutation
+ * @param {T} value
+ * @return {void} 
+ */
+
+/**
  * @template T
  */
 class Observable {
-    /** @type(Array<OnMutationCallback<T>>) */
+    /** @type(Array<OnMutation<T>>) */
     listeners = [];
     /** @readonly @type(() => T) */
     get;
@@ -23,12 +32,17 @@ class Observable {
         };
     }
 
-    /*** @type((callback: OnMutationCallback<T>) => void) */
-    onChange = (callback) => this.listeners.push(callback);
+    /**
+     * @param {(callback: OnMutation<T>) => void} callback 
+     */
+    onChange(callback) {
+        this.listeners.push(callback)
+        return this;
+    };
     
     /** 
      * @protected
-     * @type(OnMutationCallback<T>) 
+     * @type(OnMutation<T>) 
      */
     onChangeInvoker = (value) => {
         for (const callback of this.listeners) {
@@ -45,11 +59,32 @@ class Observable {
  * @param {string} defaultObjKey 
  * @returns {T}
  */
-function getFromCollectionValidated(obj, objKey, defaultKey) {
+function getFromCollectionValidated(obj, key, defaultKey) {
+    return getFromCollection(obj, validateKeyWithCollection(obj, key, defaultKey));
+}
+
+/**
+ * @template T
+ * @param {Collection<T>} obj
+ * @param {string} key 
+ * @returns {T}
+ */
+function getFromCollection(obj, key) {
+    return Array.isArray(obj) ? key : (obj instanceof Map ? obj.get(key) : obj[key]) ;
+}
+
+/**
+ * @template T
+ * @param {Collection<T>} obj
+ * @param {string} objKey 
+ * @param {string} defaultObjKey 
+ * @returns {T}
+ */
+function validateKeyWithCollection(obj, key, defaultKey) {
     /*** @type(Array<string>) */
     const array = Array.isArray(obj) ? obj : (obj instanceof Map ? Array.from(obj.keys()) : Object.keys(obj));
-    if (defaultKey != null && !array.includes(objKey)) objKey = defaultKey;
-    return Array.isArray(obj) ? objKey : (obj instanceof Map ? obj.get(objKey) : obj[objKey]) ;
+    if (!array.includes(key)) key = defaultKey;
+    return key;
 }
 
 /**
@@ -102,11 +137,7 @@ class Settings {
      * @returns {string}
      */
     setValidated(obj, settingKey, objKey, defaultKey) { 
-        /*** @type(Array<string>) */
-        const array = Array.isArray(obj) ? obj : (obj instanceof Map ? Array.from(obj.keys()) : Object.keys(obj));
-        if (!array.includes(objKey)) objKey = defaultKey;
-        this.set(settingKey, objKey);
-        return objKey;
+        return this.set(settingKey, validateKeyWithCollection(obj, objKey, defaultKey));
     }
     /**
      * @template T

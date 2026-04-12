@@ -67,7 +67,7 @@ const htmlElementToTagNames = new Map([
     [HTMLHeadingElement, ["h1","h2","h3","h4","h5","h6"]]
 ]);
 
-
+/** @type(Elements) */
 const Elements = {};
 
 /**
@@ -98,7 +98,7 @@ function addExtension(type, funcName, func) {
  * @param {{new(): T}} type
  * @return {T|undefined} 
  */
-Elements.prototype.add = function (type, tagName) {
+Element.prototype.add = function (type, tagName) {
     const elementTag = tagName ?? getTagName(type) ?? customElements.getName(type);
     if (elementTag == null) {
         console.error(`Unable to figure out the tag name for '${type}' as such has no tag name within registry or has no unique type!`);
@@ -141,6 +141,19 @@ HTMLElement.prototype.setStyle = function (style) {
     return this;
 }
 
+/**
+ * @this HTMLElement
+ * @param {StyleData} style
+ * @return {this} 
+ */
+HTMLElement.prototype.modifyStyle = function (style) {
+    if (style.style != null) Object.defineProperties(this.style, style.style);
+    if (style.className != null) this.className = style.className;
+    if (style.classList != null) this.classList.add(style.classList);
+
+    return this;
+}
+
 HTMLElement.prototype.with = function (handler) {
     for (const [objKey, objValue] of handler) {
         if (objKey == "attr") continue;
@@ -172,8 +185,6 @@ Element.prototype.modify = (modifier) => {
     modifier(this);
     return this;
 }
-
-
 
 Element.prototype.div = function () {
     return this.add(HTMLDivElement);
@@ -423,7 +434,7 @@ Elements.modal = async function (title, consumer) {
     const header = container.div(container)
         .setStyle({className: "dialog-header"});
 
-    const title = header.header(2, title)
+    const titleElement = header.header(2, title)
         .setStyle({style: { margin: '0 0 0 0' }});
 
     const btn = header.btn("", "", () => {
@@ -437,7 +448,7 @@ Elements.modal = async function (title, consumer) {
         element.style.display = "flex"
     })
 
-    await consumer({dialog: overlay, parent: container, title: title, closeBtn: btn});
+    await consumer(overlay, container, titleElement, btn);
 
     return overlay; 
 }
@@ -467,7 +478,7 @@ Element.prototype.input = (type, placeholder, defaultValue) => {
         });
 }
 
-Element.prototype.editBox = (innerText, contentEditable) => {
+Element.prototype.editBox = (id, innerText, contentEditable) => {
     /** @type(HTMLElement) */ const element = this;
     const outerDiv = element.div(parent)
         .setStyle({

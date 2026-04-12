@@ -108,5 +108,6 @@ function createWithStyles(storage) {
             marginBlockEnd: 0,
         }
     }
+    return storage;
 }
 

@@ -13,7 +13,7 @@ interface ToggleStyler {
 }
 
 interface Elements {
-    modal(title: string|Element, consumer: (elements: {dialog: HTMLDialogElement, parent: HTMLDivElement, title: HTMLHeadingElement, closeBtn: HTMLButtonElement}) => void): Promise<HTMLDialogElement>;
+    modal(title: string|Element, consumer: (dialog: HTMLDialogElement, parent: HTMLDivElement, title: HTMLHeadingElement, closeBtn: HTMLButtonElement) => Promise<void>): Promise<HTMLDialogElement>;
 }
 
 var Elements: Elements;
@@ -33,13 +33,13 @@ interface Element {
     collapsible(tooltip: string, consumer: (parent: HTMLDivElement) => void): HTMLDivElement;
 
     detail(title: string, titleClassName: string?): HTMLDetailsElement;
-    editBox(innerText: string, canEditContents: boolean): HTMLDivElement;
+    editBox(id: string, innerText: string, canEditContents: boolean): HTMLDivElement;
 
     btn(name: string, color: string, action: (btn: HTMLButtonElement, ev: PointerEvent) => any): HTMLButtonElement
     toggleBtn(id: string, value: boolean, onToggle: (value: boolean, btn: HTMLButtonElement, span: HTMLSpanElement) => void, styler: ToggleStyler): HTMLButtonElement;
 
-    selection<T>(options: Collection<T>, defaultOption: string|number|T, entryHandler: EntryHandler?): ElementObserverable<HTMLSelectElement, T>
-    dataListInput(id: string, options: Collection<string>, entryHandler: EntryHandler?): HTMLInputElement;
+    selection<T>(options: Collection<T>, defaultOption: string|number|T, entryHandler: EntryHandler?): ElementObservable<HTMLSelectElement, T>
+    dataListInput(id: string, placeholder: string,  options: Collection<string>, defaultValue: string, width: string): HTMLInputElement;
     input(type: string, placeholder: string, defaultValue: string): HTMLInputElement;
 }
 
@@ -66,6 +66,7 @@ type ElementId = string;
 interface HTMLElement {
     addStyle(style: StyleHandler?): this;
     setStyle(style: StyleHandler?): this;
+    modifyStyle(style: StyleHandler): this;
     with(handler: ElementHandler & this): this;
 }
 
@@ -78,15 +79,15 @@ interface ElementObservable<E, T> extends Observable<T> {
 type ThemeId = string;
 type StyleId = string;
 
-interface ThemeStorage {
+class ThemeStorage {
     private static storages: Map<ThemeId, ThemeStorage>;
     private static stack: ThemeId[];
     private static onCreationCallbacks: ((storage: ThemeStorage) => void)[];
 
     constructor(id: ThemeId, styleSheetSupplier: (string | string[])?);
 
-    static push(id: ThemeId);
-    static pop();
+    static push(id: ThemeId): void;
+    static pop(): void;
     static peek(): ThemeStorage;
 
     static get(id: ThemeId): ThemeStorage?;
