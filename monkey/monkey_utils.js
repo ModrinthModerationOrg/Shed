@@ -1,7 +1,7 @@
 /**
  * @template T
  */
-class Observerable {
+class Observable {
     /** @type(Array<MutationCallback<T>>) */
     listeners = [];
     /** @readonly @type(() => T) */
@@ -37,11 +37,10 @@ class Observerable {
     }
 }
 
-/*** @typedef {{[key: string]: T} | Map<String, T> | Array<string>} Collection */
 
 /**
  * @template T
- * @param {Collection} obj
+ * @param {Collection<T>} obj
  * @param {string} objKey 
  * @param {string} defaultObjKey 
  * @returns {T}
@@ -88,7 +87,7 @@ class Settings {
     delete(key) { GM_deleteValue(key); }
     /**
      * @template T
-     * @param {Collection} obj
+     * @param {Collection<T>} obj
      * @param {string} settingKey 
      * @param {string} defaultObjKey 
      * @returns {T}
@@ -96,7 +95,7 @@ class Settings {
     getValidated(obj, settingKey, defaultKey) { return getFromCollectionValidated(obj, this.get(settingKey, defaultKey), defaultKey); }
     /**
      * @template T
-     * @param {Collection} obj
+     * @param {Collection<T>} obj
      * @param {string} settingKey 
      * @param {string} objKey 
      * @param {string} defaultKey 
@@ -135,9 +134,9 @@ class Settings {
 
 /**
  * @template T
- * @extends {Observerable<T>}
+ * @extends {Observable<T>}
  */
-class CachedSetting extends Observerable {
+class CachedSetting extends Observable {
     /** 
      * @type(string) 
      * */
@@ -265,6 +264,7 @@ const monkey = {
             });
         });
     },
+    /** @private */
     onGetResponseError(type, url, msg) {
         this.error(`${type} Fetcher`, `Unable to get the desired ${type} from '${url}' due to the following error: ${(msg instanceof Object ? JSON.stringify(obj, 2) : msg)}`)
         return null;
@@ -272,7 +272,13 @@ const monkey = {
     error: (title, message) => {
         console.error(`${title}: ${message}`)
     },
-    settings: new Settings()
+    settings: new Settings(),
+    /**
+     * Method used to add the given CSS to the document using {@link GM_addStyle}
+     * @param {string} css - The CSS string to inject.
+     * @returns {HTMLStyleElement} The injected style element.
+     */
+    addStyle: GM_addStyle
 }
 
 //#endregion
