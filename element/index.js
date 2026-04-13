@@ -86,7 +86,7 @@ function getTagName(type) {
  * @param {{new(): T}} type
  * @return {T|undefined} 
  */
-Element.prototype.add = function (type, tagName) {
+Element.prototype.addTo = function (type, tagName) {
     const elementTag = tagName ?? getTagName(type) ?? customElements.getName(type);
     if (elementTag == null) {
         console.error(`Unable to figure out the tag name for '${type}' as such has no tag name within registry or has no unique type!`);
@@ -169,11 +169,11 @@ Element.prototype.modify = function (modifier) {
 }
 
 Element.prototype.div = function () {
-    return this.add(HTMLDivElement);
+    return this.addTo(HTMLDivElement);
 }
 
 Element.prototype.btn = function (name, color, onPress) {
-    const btn = this.add(HTMLButtonElement).addStyle({ 
+    const btn = this.addTo(HTMLButtonElement).addStyle({ 
         styleId: "button",
         style: { background: `${color}`, } 
     });
@@ -209,7 +209,7 @@ class ElementObservable extends Observable {
  * @param {EntryHandler} entryHandler
  */
 Element.prototype.selection = function (options, defaultOption, entryHandler) {
-    const selection = this.add(HTMLSelectElement)
+    const selection = this.addTo(HTMLSelectElement)
         .addStyle({ styleId: "selection" })
         // TODO: ADD ABILITY TO HANDLE WHEN UPDATED FROM THIS METHOD
         .updateSelections(options, defaultOption, entryHandler);
@@ -235,7 +235,7 @@ Element.prototype.dataListInput = function (id, placeholder, options, defaultVal
         .addStyle({ styleId: "selection", style: { width: width ?? "100px" }})
         .with({name: id, attr: { list: id }})
 
-    this.add(HTMLDataListElement)
+    this.addTo(HTMLDataListElement)
         .with({id: id, })
         .updateSelections(options, EntryHandler.KEY_KEY);
 
@@ -297,7 +297,7 @@ function updateSelections(select, options, defaultOption, entryHandler) {
         else if (entryHandler == EntryHandler.KEY_KEY) data = [data[0], data[0]];
         else if (entryHandler == EntryHandler.VALUE_VALUE) data = [data[1], data[1]];
 
-        const el = select.add(HTMLOptionElement)
+        const el = select.addTo(HTMLOptionElement)
             .with({
                 innerText: data[0],
                 innerValue: data[1],
@@ -380,11 +380,11 @@ Element.prototype.collapsible = function (tooltip, state, consumer) {
 Element.prototype.toggleBtn = function (id, value, onToggle, /** @type(ToggleStyler) */ styler) {
     if (styler == null) styler = ThemeStorage.peek().toggleStyler;
     const baseStyles = styler?.initialStyles(value);
-    const button = this.add(HTMLButtonElement)
+    const button = this.addTo(HTMLButtonElement)
         .with({id: id, type: 'button', attr: {role: 'switch', 'aria-checked': value}})
         .setStyle(baseStyles?.btnStyle ?? null);
 
-    const knob = button.add(HTMLSpanElement)
+    const knob = button.addTo(HTMLSpanElement)
         .setStyle(baseStyles?.spanStyle ?? null);
 
     button.addEventListener('click', () => {
@@ -404,7 +404,7 @@ Element.prototype.toggleBtn = function (id, value, onToggle, /** @type(ToggleSty
 
 Element.prototype.header = function (type, text) {
     return this
-        .add(HTMLHeadingElement, `h${type}`)
+        .addTo(HTMLHeadingElement, `h${type}`)
         .with({textContent: text})
 }
 
@@ -423,7 +423,7 @@ HTMLDialogElement.prototype.onClose = function (callback) {
 
 Elements.modal = async function (title, consumer) {
     // 1. Create the Overlay (Background)
-    const overlay = document.body.add(HTMLDialogElement)
+    const overlay = document.body.addTo(HTMLDialogElement)
         .addStyle({
             styleId: "dialog",
             className: "special-theme"
@@ -466,12 +466,12 @@ Elements.modal = async function (title, consumer) {
 }
 
 Element.prototype.detail = function(title, titleClassName) {
-    return this.add(HTMLDetailsElement)
+    return this.addTo(HTMLDetailsElement)
         .modify((details) => {
-            const summary = details.add(HTMLElement, "summary")
+            const summary = details.addTo(HTMLElement, "summary")
                 .setStyle({style: { width: "fit-content" }});
 
-            const titleElement = summary.add(HTMLSpanElement);
+            const titleElement = summary.addTo(HTMLSpanElement);
 
             if (titleClassName != null) titleElement.setStyle({className: titleClassName})
 
@@ -480,7 +480,7 @@ Element.prototype.detail = function(title, titleClassName) {
 }
 
 Element.prototype.input = function(type, placeholder, defaultValue) {
-    return this.add(HTMLInputElement)
+    return this.addTo(HTMLInputElement)
         .with({
             type: type,
             placeholder: placeholder,
