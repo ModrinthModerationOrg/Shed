@@ -441,7 +441,12 @@ Elements.modal = async function (title, consumer) {
 
     const container = overlay.div()
         .with({id: "modal-container"})
-        .addStyle({styleId: "dialog_container"});
+        .addStyle({
+            styleId: "dialog_container",
+            style: {
+                width: ""
+            }
+        });
 
     const header = container.div(container)
         .setStyle({styleId: "dialog_header"});
