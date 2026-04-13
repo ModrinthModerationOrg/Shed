@@ -285,7 +285,7 @@ function updateSelections(select, options, defaultOption, entryHandler) {
         }
     }
 
-    select.innerHTML = ""
+    select.clearElements()
 
     var defaultOptionEl = null;
 
@@ -297,10 +297,12 @@ function updateSelections(select, options, defaultOption, entryHandler) {
         else if (entryHandler == EntryHandler.KEY_KEY) data = [data[0], data[0]];
         else if (entryHandler == EntryHandler.VALUE_VALUE) data = [data[1], data[1]];
 
-        const el = addElement(select, HTMLOptionElement, 'option');
-
-        el.innerText = data[0];
-        el.value = el.innerValue = data[1];
+        const el = select.add(HTMLOptionElement)
+            .with({
+                innerText: data[0],
+                innerValue: data[1],
+                value: data[1]
+            });
 
         if (data[0] == defaultOption && defaultOptionEl != null) {
             defaultOptionEl = el;
