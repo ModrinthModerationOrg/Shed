@@ -372,7 +372,7 @@ Element.prototype.collapsible = function (tooltip, state, consumer) {
                 }
             }
 
-            const value = state;
+            const value = state.get();
     
             const btn = holder.btn("...", "F3E4C9", (btn) => {
                     value = !value;
