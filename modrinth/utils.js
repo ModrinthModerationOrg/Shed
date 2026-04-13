@@ -74,10 +74,64 @@
  */
 
 /**
- * Represents a function that accepts one argument and produces a result.
- * 
- * @callback MutationCallback
+ * @typedef ModrinthVersion
+ * @type {object}
+ * @property {string} id - project id.
+ * @property {string} author_id - id of the author who uploaded the file
+ * @property {string} version_number - The version number. Ideally will follow semantic versioning
+ * @property {ModrinthVersionFile[]} files - project type
+ */
+
+/**
+ * @typedef ModrinthVersionFile
+ * @type {object}
+ * @property {string} url - CDN url for the version field
+ * @property {string} filename - 
+ */
+
+/**
+ * @typedef ModrinthUser
+ * @type {object}
+ * @property {string} id - user id
+ * @property {string} name - The user’s display name
+ * @property {string} username - The user’s username
+ */
+
+/**
+ * @typedef ModrinthOrganization
+ * @type {object}
+ * @property {string} name - Title of the given organization i.e. its name
+ * @property {string} id - organization id.
+ * @property {string} slug - organization slug.
+ * @property {string} team_id - The ID of the team this organization of members is of
+ * @property {Array<ModrinthTeamMember>} members - Members of the organization
+ */
+
+/**
+ * @typedef ModrinthTeam
+ * @type {object}
+ * @property {string} id - The ID of the team this team member is a member of
+ * @property {Array<ModrinthTeamMember>} members - Members of the team
+ */
+
+/**
+ * @typedef ModrinthTeamMember
+ * @type {object}
+ * @property {string} id - The ID of the team this team member is a member of
+ * @property {string} role
+ * @property {boolean} is_owner
+ * @property {ModrinthUser} user 
+ */
+
+/**
+ * @callback OnMutationRegexCallback
  * @param {boolean} isMatch
+ * @param {StateManager} manager
+ * @return {void} 
+ */
+
+/**
+ * @callback OnMutationCallback
  * @param {StateManager} manager
  * @return {void} 
  */
@@ -112,11 +166,21 @@ class StateManager {
      * Method used to register a tool that may not always be present depending on the state of the modrinth application
      * @param {RegExp} regex - 
      * @param {string} id - 
-     * @param {MutationCallback} callback -
+     * @param {OnMutationRegexCallback} callback -
      * @returns {boolean} if the given register callback worked for the given callback
      */
     registerElement(regex, id, callback){
         return this.#registerElement(regex, id, callback)
+    }
+
+    /**
+     * @private
+     * @param {string} id - 
+     * @param {OnMutationCallback} callback -
+     * @returns {boolean} if the given register callback worked for the given callback
+     */
+    registerCallback(id, callback){
+        return this.#registerCallback(id, callback)
     }
 
     /**
@@ -142,21 +206,38 @@ class StateManager {
                     this.url = window.location.href;
 
                     // DO NOT UNDO LAMDA HERE AS IT FREAKS OUT FYI
-                    setTimeout(async () => this.#handleUrlChange(), 100);
+                    setTimeout(async () => {
+                        this.#handleUrlChange();
+                        this.#runBasicCallbacks();
+                    }, 25);
+                } else {
+                    this.#runBasicCallbacks();
                 }
-            }, 100);
+            }, 25);
         }).observe(document.body, { childList: true, subtree: true });
 
         this.url = window.location.href;
 
         await this.#handleUrlChange();
+        this.#runBasicCallbacks();
+        
         return this;
     }
 
+    #runBasicCallbacks() {
+        for (const callback of this.#basicCallbacks.values()) {
+            callback(this);
+        }
+    }
+
     //#region internal
-    /*** @type {Map<RegExp, Array<MutationCallback>>} */
+
+    /*** @type {Map<string, OnMutationCallback>} */
+    #basicCallbacks = new Map();
+
+    /*** @type {Map<RegExp, Array<OnMutationRegexCallback>>} */
     #expToCallback = new Map();
-    /*** @type {Map<String, {regex: RegExp, callback: MutationCallback}>} */
+    /*** @type {Map<String, {regex: RegExp, callback: OnMutationRegexCallback}>} */
     #idToCallback = new Map();
 
     /*** @type {Map<RegExp, boolean>} */
@@ -168,7 +249,7 @@ class StateManager {
      * @private
      * @param {RegExp} regex - 
      * @param {string} id - 
-     * @param {MutationCallback} callback -
+     * @param {OnMutationRegexCallback} callback -
      * @returns {boolean} if the given register callback worked for the given callback
      */
     #registerElement(regex, id, callback){
@@ -193,6 +274,27 @@ class StateManager {
         if (this.#isSetup) {
             callback(this.#results[regex] = this.#results[regex] ?? regex.test(this.url), this)
         }
+
+        return true;
+    }
+
+    /**
+     * @private
+     * @param {string} id - 
+     * @param {OnMutationCallback} callback -
+     * @returns {boolean} if the given register callback worked for the given callback
+     */
+    #registerCallback(id, callback){
+        const existingCallback = this.#basicCallbacks.get(id);
+
+        if (existingCallback != null) {
+            app.error("State Manager", `Unable to add new widget as it seems to share its id with another: ${id}`)
+            return false;
+        }
+
+        this.#basicCallbacks.set(id, callback)
+
+        if (this.#isSetup) callback(this)
 
         return true;
     }
@@ -278,27 +380,17 @@ function getSlugFromURL(/*** @type {string} */ url){
     return slug;
 }
 
-function waitForElementValue(selector, getter, interval = 100) {
-    return new Promise((resolve) => {
-        const check = setInterval(() => {
-            const el = document.querySelector(selector);
-            var locatedValue = false;
-            if (el) {
-                const value = getter(el);
-                if (value) {
-                    clearInterval(check);
-                    resolve(value);
-                    locatedValue = true;
-                }
-            }
-            if (!locatedValue) app.debug("Waiting for: " + selector)
-        }, interval);
-    });
+function getVersionFromUrl(/*** @type {string} */ url){
+    return url.replace("https://", "").split('/').pop();
 }
 
 /**
- * 
+ * @param {ModrinthVersion} version
  */
+function getVersionKey(version) {
+    return `${version.id}/${version.version_number}`;
+}
+
 function validateModrinthResponse(response, onError) {
     if (response.name == "ModrinthApiError" || response.name == "ModrinthErrorResponse") {
         return onError(response);
@@ -470,11 +562,105 @@ const app = {
     projectIdFor(id) {
         return this.projectFor(id).then((project) => project.id)
     },
+    /**
+     * @param {Slug|Identifier} projectId 
+     * @param {Version|Identifier} versionId 
+     * @returns {Promise<ModrinthVersion>}
+     */
+    projectVersionFor(projectId, versionId) {
+        return app.labrinthGetRequest(`/project/${projectId}/version/${versionId}`).then(obj => {
+            return validateModrinthResponse(obj, (msg) => {
+                app.error(`Project Version Id Grabber`, msg)
+                return {
+                    id: versionId,
+                    project_id: projectId
+                };
+            })
+        });
+    },
+    /**
+     * @param {Slug|Identifier} projectId 
+     * @returns {Promise<ModrinthVersion[]>}
+     */
+    projectVersionsFor(projectId) {
+        return app.labrinthGetRequest(`/project/${projectId}/version`).then(obj => {
+            return validateModrinthResponse(obj, (msg) => {
+                app.error(`Id/Slug Grabber`, msg)
+                return [];
+            });
+        })
+    },
+    /**
+     * @param {Slug|Identifier} projectId 
+     * @returns {Promise<ModrinthVersion[]>}
+     */
+    primaryFileUrlsFor(projectId) {
+        return this.projectVersionsFor(projectId).then(obj => {
+            const files = [];
+            for (const entry of obj) {
+                files.push(entry.files[0].url);
+            }
+            return files;
+        });
+    },
+    /**
+     * @param {Slug|Identifier} projectId 
+     */
+    keyedPrimaryFileUrlsFor(projectId) {
+        return this.projectVersionsFor(projectId).then(obj => {
+            /*** @type(Map<string, string>) */
+            const files = new Map();
+            for (const entry of obj) {
+                files.set(getVersionKey(entry), entry.files[0].url);
+            }
+            return files;
+        });
+    },
+    /**
+     * @param {Identifier} teamId 
+     * @returns {Promise<ModrinthTeam>}
+     */
+    teamFor(teamId) {
+        return app.labrinthGetRequest(`/team/${teamId}/members`).then(obj => {
+            return {
+                teamID: teamId,
+                members: validateModrinthResponse(obj, () => {
+                    app.error(`Team Member Info Getter`, msg)
+                    return [];
+                })
+            }
+        })
+    },
+    /**
+     * @param {Identifier} teamId 
+     * @returns {Promise<ModrinthOrganization>}
+     */
+    organizationFor(organizationId) {
+        return app.labrinthGetRequest(`/organization/${organizationId}`).then(obj => {
+            return validateModrinthResponse(obj, (msg) => {
+                app.error(`Team Member Info Getter`, msg)
+                return [];
+            });
+        })
+    },
+    /**
+     * @param {Identifier} userId 
+     * @returns {Promise<ModrinthUser>}
+     */
+    userFor(userID) {
+        return app.labrinthGetRequest(`/user/${userID}`).then(obj => {
+            return validateModrinthResponse(obj, (msg) => {
+                app.error(`User Grabber`, msg)
+                return {};
+            });
+        })
+    },
     state: new StateManager()
 }
 
 /**
  * @typedef {string} Slug - Slug of a object on modrinth
+ * @typedef {string} Version - Slug of a object on modrinth
  * @typedef {string} Identifier - Identifier of a object on modrinth
  */
 

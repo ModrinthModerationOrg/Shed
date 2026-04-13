@@ -9,36 +9,6 @@ const { BlobReader, ZipReader, BlobWriter, ZipWriter } = await import("https://e
 
 //#region TreeNode Type Def
 
-
-/**
- * Root tree node — extends TreeNode with a flat entries list.
- * @template {TreeNode<N>} N
- */
-class TreeNode {
-    /** @type {TreeNode<N>?} */
-    parent;
-
-    /** @type {Map<string, N>} */
-    children = new Map();
-
-    /** @type {string} */
-    name;
-
-    /** @type {string} */
-    path;
-
-    /**
-     * @param {string} name
-     * @param {string} path
-     * @param {TreeNode<N>?} parent
-     */
-    constructor(parent, name, path) {
-        this.parent = parent;
-        this.name = name;
-        this.path = path;
-    }
-}
-
 /**
  * Zip tree node — extends TreeNode with blob accessor and metadata.
  * @extends {TreeNode<ZipTreeNode>}

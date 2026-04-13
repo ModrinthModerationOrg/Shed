@@ -3,8 +3,8 @@ type Collection<T> = {[key: string]: T} | Map<String, T> | T[];
 type Consumer<T> = (value: T) => void;
 
 interface ElementOptions {
-    tagName: string?;
-    style: StyleHandler?;
+    tagName: string | undefined;
+    style: StyleHandler | undefined;
 }
 
 interface ToggleStyler {
@@ -12,8 +12,10 @@ interface ToggleStyler {
     onChangeStyler: (value: boolean, btn: HTMLButtonElement, span: HTMLSpanElement) => void;
 }
 
+declare global {
 interface Elements {
     modal(title: string|Element, consumer: (dialog: HTMLDialogElement, parent: HTMLDivElement, title: HTMLHeadingElement, closeBtn: HTMLButtonElement) => Promise<void>): Promise<HTMLDialogElement>;
+}
 }
 
 var Elements: Elements;
@@ -30,7 +32,7 @@ interface Element {
 
     div(): HTMLDivElement;
     header(type: string|number, text: string): HTMLHeadingElement;
-    collapsible(tooltip: string, consumer: (parent: HTMLDivElement) => void): HTMLDivElement;
+    collapsible(tooltip: string, state: Observable<boolean>, consumer: (parent: HTMLDivElement) => void): HTMLDivElement;
 
     detail(title: string, titleClassName: string?): HTMLDetailsElement;
     editBox(id: string, innerText: string, canEditContents: boolean): HTMLDivElement;

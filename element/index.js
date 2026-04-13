@@ -66,6 +66,8 @@ const htmlElementToTagNames = new Map([
     //[HTMLTableColElement, ["col", "colgroup"]],
     [HTMLHeadingElement, ["h1","h2","h3","h4","h5","h6"]]
 ]);
+/** @import {} from '../misc/index' */
+/** @import {Elements} from './index.d.ts' */
 
 /** @type(Elements) */
 const Elements = {};
@@ -202,7 +204,10 @@ Element.prototype.btn = function (name, color, onPress) {
     return btn;
 }
 
-
+/**
+ * @template {Element} E
+ * @template T
+ */
 class ElementObservable extends Observable {
     element;
 
@@ -271,7 +276,7 @@ const EntryHandler = Object.freeze({
  * @this HTMLSelectElement
  * @return {this} 
  */
-HTMLSelectElement.updateSelections = function (options, defaultOption, entryHandler) {
+HTMLSelectElement.prototype.updateSelections = function (options, defaultOption, entryHandler) {
     updateSelections(this, options, defaultOption, entryHandler);
     return this;
 }
@@ -280,7 +285,7 @@ HTMLSelectElement.updateSelections = function (options, defaultOption, entryHand
  * @this HTMLDataListElement
  * @return {this} 
  */
-HTMLDataListElement.updateSelections = function (options, entryHandler) {
+HTMLDataListElement.prototype.updateSelections = function (options, entryHandler) {
     updateSelections(this, options, null, entryHandler);
     return this;
 }
@@ -335,23 +340,50 @@ function updateSelections(select, options, defaultOption, entryHandler) {
     for (const data of entries) createOption(data);
 }
 
-Element.prototype.collapsible = function (tooltip, consumer) {
+Element.prototype.collapsible = function (tooltip, state, consumer) {
     return this
         .div()
+        .setStyle({
+            style: {
+                width: "100%",
+                gap: "10px",
+                display: "flex",
+                flexDirection: "column"
+            }
+        })
         .modify((holder) => {
             /** @type(HTMLDivElement) */
             var collapsible = null;
+
+            /**
+             * @param {boolean} value
+             * @param {HTMLButtonElement} btn
+             */
+            function onPress(value, btn) {
+                if (value) {
+                    btn.classList.add("active")
+                } else {
+                    btn.classList.remove("active")
+                }
+
+                if (collapsible.style.display === "flex") {
+                    collapsible.style.display = "none";
+                } else {
+                    collapsible.style.display = "flex";
+                }
+            }
+
+            const value = state;
     
-            holder.btn("...", "F3E4C9", (btn) => {
-                    btn.classList.toggle("active");
-                    if (collapsible.style.display === "flex") {
-                        collapsible.style.display = "none";
-                    } else {
-                        collapsible.style.display = "flex";
-                    }
+            const btn = holder.btn("...", "F3E4C9", (btn) => {
+                    value = !value;
+                    onPress(value, btn)
+                    state.set(value);
                 })
                 .with({title: tooltip ?? ""})
                 .addStyle({style: { padding: "0px" }});
+
+            onPress(value, btn);
 
             collapsible = holder.div().setStyle({
                 style: {
@@ -417,14 +449,14 @@ Elements.modal = async function (title, consumer) {
             className: "special-theme"
         }); 
         
-    overlay.onclose = () => overlay.style.display = "";
+    overlay.onclose(() => overlay.style.display = "");
     
     // Optional: Close dialog when clicking outside of it (on the backdrop)
     overlay.addEventListener('click', (event) => {
         const target = event.target;
         if (overlay.contains(target) && overlay != target) return;
         overlay.close();
-        for (const callback of element.onCloseModalCallbacks) callback(element);
+        for (const callback of overlay.onCloseModalCallbacks) callback(element);
     });
 
     const container = overlay.div()
