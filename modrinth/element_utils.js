@@ -84,7 +84,7 @@ function createWithStyles(storage) {
     }
     storage.styleAppliers["dialog_container"] = {
         style: {
-            ...storage.styleAppliers["bordered_flex"],
+            ...storage.styleAppliers["bordered_flex"].style,
             padding: '24px',
             borderRadius: '12px',
             border: "0",
@@ -95,6 +95,15 @@ function createWithStyles(storage) {
             height: "min-content",
             maxHeight: '100%',
             overflow: 'hidden',
+        }
+    }
+    storage.styleAppliers["dialog_header"] = {
+        style: {
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "0px 4px",
+            width: "100%"
         }
     }
     storage.styleAppliers["edit_box_div"] = {

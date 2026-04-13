@@ -460,7 +460,7 @@ Elements.modal = async function (title, consumer) {
         .addStyle({styleId: "dialog_container"});
 
     const header = container.div(container)
-        .setStyle({className: "dialog-header"});
+        .setStyle({styleId: "dialog_header"});
 
     const titleElement = header.header(2, title)
         .setStyle({style: { margin: '0 0 0 0' }});
