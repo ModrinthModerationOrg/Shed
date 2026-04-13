@@ -608,11 +608,10 @@ class ThemeStorage {
     static applyStyle(element, handler = {}) {
         const storage = (handler.themeId != null) ? ThemeStorage.get(handler.themeId) : ThemeStorage.peek();
         if (storage != null) {
+            /** @type {StyleData} */
+            const styleApplier = storage.styleAppliers[handler.styleId] ?? {};
 
             if (handler.append ?? true) {
-                /** @type {StyleData} */
-                const styleApplier = storage.styleAppliers[handler.styleId] ?? {};
-
                 Object.assign(element.style, {
                     ...(storage.baseStyle?.style ?? {}),
                     ...(styleApplier.style ?? {}),
@@ -625,10 +624,16 @@ class ThemeStorage {
                 if (handler.classList != null) element.classList.add(handler.classList);
                 if (styleApplier.classList != null) element.classList.add(styleApplier.classList != null)
             } else {
-                Object.assign(element.style, handler.style ?? {});
+                Object.assign(element.style, {
+                    ...(styleApplier.style ?? {}),
+                    ...(handler.style ?? {}),
+                });
 
-                if (handler.className != null) element.className = handler.className;
+                if (handler.className != null || styleApplier.className != null) {
+                    element.className = `${handler.className} ${styleApplier.className}`;
+                }
                 if (handler.classList != null) element.classList.add(handler.classList);
+                if (styleApplier.classList != null) element.classList.add(styleApplier.classList != null)
             }   
         }
     }
