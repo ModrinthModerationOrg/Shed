@@ -61,7 +61,7 @@ class Settings {
      * @returns {Promise<CachedSetting<T>>}
      */
     async of(key, defaultValue, decoder = (obj) => obj, encoder = (obj) => obj) {
-        const setting = new CachedSetting(this, key, defaultValue, decoder, encoder);;
+        const setting = new CachedSetting(this, key, defaultValue, decoder, encoder);
         await setting.valueSetGate;
         return setting;
     }

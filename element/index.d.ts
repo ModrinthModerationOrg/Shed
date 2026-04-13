@@ -23,9 +23,8 @@ interface Element {
      * Method used to add a child element with custom CSS within javascript land
      */
     add<T>(type: { new (): T }, tagName: string?): T;
-    addTo(consumer: Consumer<this>): this;
-
     modify(modifier: Consumer<this>): this;
+    
     themed(themeId: ThemeId, consumer: Consumer<this>): this;
 
     div(): HTMLDivElement;

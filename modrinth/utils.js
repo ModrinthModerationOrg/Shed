@@ -189,8 +189,7 @@ class StateManager {
      * @returns {boolean} was able to locate callback and update it
      */
     updateElement(id) {
-        return this.#updateElement(id)
-    }
+        return this.#updateElement(id)    }
 
     //--
 
@@ -207,7 +206,7 @@ class StateManager {
 
                     // DO NOT UNDO LAMDA HERE AS IT FREAKS OUT FYI
                     setTimeout(async () => {
-                        this.#handleUrlChange();
+                        await this.#handleUrlChange();
                         this.#runBasicCallbacks();
                     }, 25);
                 } else {
@@ -391,6 +390,10 @@ function getVersionKey(version) {
     return `${version.id}/${version.version_number}`;
 }
 
+/**
+ * @param {object|ModrinthApiError|Error} response 
+ * @param {(error: string) => object} onError 
+ */
 function validateModrinthResponse(response, onError) {
     if (response.name == "ModrinthApiError" || response.name == "ModrinthErrorResponse") {
         return onError(response);
@@ -522,7 +525,7 @@ const app = {
     /**
      * Method used to send requests within modrinths API using applications client
      * 
-     * @param {RequestMethod}   method - method request type either being GET, POST, PATCH, or DELETE
+     * @param        {string}     path - path for the api request
      * @param        {object}   params - query string params
      * @param        {object}     body - request body for PATCH/POST
      * @param        {object}  headers - extra headers (auth is added automatically!)
@@ -549,9 +552,9 @@ const app = {
      * @returns {Promise<ModrinthProject>}
      */
     async projectFor(id) {
-        return app.labrinthGetRequest(`/project/${id}`).then(obj => {
+        return this.labrinthGetRequest(`/project/${id}`).then(obj => {
             return validateModrinthResponse(obj, (msg) => {
-                app.error(`Project Info Getter`, msg)
+                this.error(`Project Info Getter`, msg)
                 return { id: id }
             })
         });
@@ -568,9 +571,9 @@ const app = {
      * @returns {Promise<ModrinthVersion>}
      */
     projectVersionFor(projectId, versionId) {
-        return app.labrinthGetRequest(`/project/${projectId}/version/${versionId}`).then(obj => {
+        return this.labrinthGetRequest(`/project/${projectId}/version/${versionId}`).then(obj => {
             return validateModrinthResponse(obj, (msg) => {
-                app.error(`Project Version Id Grabber`, msg)
+                this.error(`Project Version Id Grabber`, msg)
                 return {
                     id: versionId,
                     project_id: projectId
@@ -583,9 +586,9 @@ const app = {
      * @returns {Promise<ModrinthVersion[]>}
      */
     projectVersionsFor(projectId) {
-        return app.labrinthGetRequest(`/project/${projectId}/version`).then(obj => {
+        return this.labrinthGetRequest(`/project/${projectId}/version`).then(obj => {
             return validateModrinthResponse(obj, (msg) => {
-                app.error(`Id/Slug Grabber`, msg)
+                this.error(`Id/Slug Grabber`, msg)
                 return [];
             });
         })
@@ -621,11 +624,11 @@ const app = {
      * @returns {Promise<ModrinthTeam>}
      */
     teamFor(teamId) {
-        return app.labrinthGetRequest(`/team/${teamId}/members`).then(obj => {
+        return this.labrinthGetRequest(`/team/${teamId}/members`).then(obj => {
             return {
                 teamID: teamId,
                 members: validateModrinthResponse(obj, () => {
-                    app.error(`Team Member Info Getter`, msg)
+                    this.error(`Team Member Info Getter`, msg)
                     return [];
                 })
             }
@@ -636,9 +639,9 @@ const app = {
      * @returns {Promise<ModrinthOrganization>}
      */
     organizationFor(organizationId) {
-        return app.labrinthGetRequest(`/organization/${organizationId}`).then(obj => {
+        return this.labrinthGetRequest(`/organization/${organizationId}`).then(obj => {
             return validateModrinthResponse(obj, (msg) => {
-                app.error(`Team Member Info Getter`, msg)
+                this.error(`Team Member Info Getter`, msg)
                 return [];
             });
         })
@@ -648,9 +651,9 @@ const app = {
      * @returns {Promise<ModrinthUser>}
      */
     userFor(userID) {
-        return app.labrinthGetRequest(`/user/${userID}`).then(obj => {
+        return this.labrinthGetRequest(`/user/${userID}`).then(obj => {
             return validateModrinthResponse(obj, (msg) => {
-                app.error(`User Grabber`, msg)
+                this.error(`User Grabber`, msg)
                 return {};
             });
         })

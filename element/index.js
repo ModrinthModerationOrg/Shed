@@ -81,19 +81,6 @@ function getTagName(type) {
 }
 
 /**
- * @template
- * @param {{new(): T}} type
- */
-function addExtension(type, funcName, func) {
-    const currentFunc = type.prototype[funcName];
-    if (currentFunc == null) {
-        type.prototype[funcName] = func;
-    } else {
-        app.error("Method Extender", `Unable to extend the given type ${type} as it already has a func named: ${funcName}`)
-    }
-} 
-
-/**
  * @template {HTMLElement} T
  * @this Element
  * @param {{new(): T}} type
@@ -109,16 +96,6 @@ Element.prototype.add = function (type, tagName) {
     const element = document.createElement(elementTag);
     this.append(element);
     return element;
-}
-
-/**
- * @this Element
- * @param { (this) => this } consumer
- * @return { this } 
- */
-Element.prototype.addTo = function (consumer) {
-    consumer(this);
-    return this;
 }
 
 /**
@@ -467,7 +444,7 @@ Elements.modal = async function (title, consumer) {
 
     const btn = header.btn("", "", () => {
             overlay.close();
-            if(onclose != null) onclose();
+            for (const callback of overlay.onCloseModalCallbacks) callback(overlay);
         })
         .with({id: "closeBtn", innerHTML: "&times;", attr: {"aria-label": "Close dialog"}})
         .addStyle({style: {width: ""}});

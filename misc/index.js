@@ -139,7 +139,7 @@ function waitForElementValue(selector, getter, interval = 100) {
                     locatedValue = true;
                 }
             }
-            if (!locatedValue) app.debug("Waiting for: " + selector)
+            if (!locatedValue) (app ?? console).debug("Waiting for: " + selector)
         }, interval);
     });
 }

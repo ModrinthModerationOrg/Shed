@@ -43,6 +43,22 @@ class ZipTreeNode extends TreeNode {
         };
     }
 
+    /**
+     * @param {(() => Promise<Blob|null>)?} blob
+     * @param {("zip" | "file" | "directory")?} type
+     */
+    setData(blob, type) {
+        this.blob = blob;
+
+        if (type != null) {
+            this.type = type;
+        } else if (this.blob == null && this.type != "directory") {
+            this.type = "directory"
+        } else {
+            this.type = "file"
+        }
+    }
+
     remove() {
         this.children.delete(this.name);
 
