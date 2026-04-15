@@ -38,7 +38,7 @@ interface Element {
     btn(name: string, color: string, action: (btn: HTMLButtonElement, ev: PointerEvent) => any): HTMLButtonElement
     toggleBtn(id: string, value: boolean, onToggle: (value: boolean, btn: HTMLButtonElement, span: HTMLSpanElement) => void, styler: ToggleStyler): HTMLButtonElement;
 
-    selection<T>(options: Collection<T>, defaultOption: string|number|T, entryHandler: EntryHandler?): {element: HTMLSelectElement, keyObservable: Observable<string|number|T>, valueObservable: Observable<string|number|T>}
+    selection<T>(options: Collection<T>, defaultOption: string|number|T, entryHandler: EntryHandler?): ElementObservable<HTMLSelectElement, {key: string | number | T, value: T}>
     dataListInput(id: string, placeholder: string,  options: Collection<string>, defaultValue: string, width: string): HTMLInputElement;
     input(type: string, placeholder: string, defaultValue: string): HTMLInputElement;
 }

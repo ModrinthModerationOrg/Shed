@@ -33,7 +33,7 @@ class Observable {
     }
 
     /**
-     * @param {(callback: OnMutation<T>) => void} callback 
+     * @param {OnMutation<T>} callback 
      */
     onChange(callback) {
         this.listeners.push(callback)

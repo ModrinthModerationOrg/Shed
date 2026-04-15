@@ -187,6 +187,7 @@ Element.prototype.btn = function (name, color, onPress) {
 /**
  * @template {Element} E
  * @template T
+ * @extends Observable<T>
  */
 class ElementObservable extends Observable {
     element;
@@ -214,26 +215,24 @@ Element.prototype.selection = function (options, defaultOption, entryHandler) {
         // TODO: ADD ABILITY TO HANDLE WHEN UPDATED FROM THIS METHOD
         .updateSelections(options, defaultOption, entryHandler);
 
-    var baseKey = defaultOption;
-    var baseValue = getFromCollectionValidated(options, defaultOption);
+    const dataEntry = {
+        key: defaultOption,
+        value: getFromCollectionValidated(options, defaultOption)
+    }
     
-    /** @type(ElementObservable<HTMLSelectElement, T>) */
-    const keyObservable = new Observable(() => baseKey);
-    const valueObservable = new Observable(() => baseValue);
-
+    /** @type(ElementObservable<HTMLSelectElement, {key: string | number | T, value: T}>) */
+    const observable = new ElementObservable(selection, () => dataEntry);
 
     selection.onchange = () => {
         const selectedElement = selection.options[selection.selectedIndex];
 
-        keyObservable.set(baseKey = selectedElement.innerText);
-        valueObservable.set(baseValue = selectedElement.innerValue);
+        dataEntry.key = selectedElement.innerText;
+        dataEntry.value = selectedElement.innerValue;
+
+        observable.set(dataEntry);
     }
 
-    return {
-        element: selection,
-        keyObservable: keyObservable,
-        valueObservable: valueObservable,
-    };
+    return observable;
 }
 
 Element.prototype.dataListInput = function (id, placeholder, options, defaultValue, width) {
