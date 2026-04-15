@@ -138,8 +138,9 @@ const monkey = {
     /**
      * Method used to send http requests from within this tamper monkey script
      * 
-     * @param {string}                                                                     url - url target for the request
-     * @param {{[key: string]: string;} | undefined}                                    header - extra headers (auth is added automatically!)
+     * @param {string}                                                       url - url target for the request
+     * @param {{[key: string]: string;} | undefined}                         headers - extra headers (auth is added automatically!)
+     * @param {((error: Object|Error, type: ErrorType) => T) | undefined}    onError - Function to handle errors of either caused by the handling of the response or from the request call
      * @returns {Promise<Blob | undefined>}
      */
     getBlobFrom(url, headers, onError) {
@@ -148,8 +149,9 @@ const monkey = {
     /**
      * Method used to send http requests from within this tamper monkey script
      * 
-     * @param {string}                                                                     url - url target for the request
-     * @param {{[key: string]: string} | undefined}                                    header - extra headers (auth is added automatically!)
+     * @param {string}                                                       url - url target for the request
+     * @param {{[key: string]: string} | undefined}                          headers - extra headers (auth is added automatically!)
+     * @param {((error: Object|Error, type: ErrorType) => T) | undefined}    onError - Function to handle errors of either caused by the handling of the response or from the request call
      * @returns {Promise<ArrayBuffer | undefined>}
      */
     getArrayBuffer(url, headers, onError) {
@@ -159,11 +161,11 @@ const monkey = {
      * Method used to send http requests from within this tamper monkey script
      * 
      * @template T
-     * @param {"arraybuffer", "blob", "json", "stream", "text" or undefined}                 type - type of data to be returned from the response
-     * @param {string}                                                                       url - url target for the request
-     * @param {{[key: string]: string} | undefined}                                          header - extra headers (auth is added automatically!)
-     * @param {(Object) => T}                                                                handler - Function that handles the response data and turns it into the required data
-     * @param {((type: string, url: string, error: string|number|Object) => T) | undefined}  onError - Function to handle errors of either caused by the handling of the response or from the request call
+     * @param {"arraybuffer", "blob", "json", "stream", "text" or undefined} type - type of data to be returned from the response
+     * @param {string}                                                       url - url target for the request
+     * @param {{[key: string]: string} | undefined}                          header - extra headers (auth is added automatically!)
+     * @param {(Object) => T}                                                handler - Function that handles the response data and turns it into the required data
+     * @param {((error: Object|Error, type: ErrorType) => T) | undefined}    onError - Function to handle errors of either caused by the handling of the response or from the request call
      * @returns {Promise<T|undefined>}
      */
     getDataFrom(url, type, headers, handler = (data) => data.response, onError) {
