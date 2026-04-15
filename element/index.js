@@ -327,6 +327,8 @@ function updateSelections(select, options, defaultOption, entryHandler) {
     else entries = Object.entries(options);
 
     for (const data of entries) createOption(data);
+
+    select.onChange?.();
 }
 
 Element.prototype.collapsible = function (tooltip, state, consumer) {
