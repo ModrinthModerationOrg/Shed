@@ -178,7 +178,7 @@ Element.prototype.btn = function (name, color, onPress) {
         style: { background: `${color}`, } 
     });
 
-    btn.innerText = name;
+    btn.innerHTML = name;
     btn.onclick = (obj, event) => onPress(btn, event);
 
     return btn;
@@ -196,9 +196,10 @@ class ElementObservable extends Observable {
      * @constructor
      * @param {E} element
      * @param {() => T} getCallback
+     * @param {((value: T) => T)?} setCallback
      */
-    constructor (element, getCallback) {
-        super(getCallback);
+    constructor (element, getCallback, setCallback) {
+        super(getCallback, setCallback);
         this.element = element
     }
 }
@@ -221,7 +222,19 @@ Element.prototype.selection = function (options, defaultOption, entryHandler) {
     }
     
     /** @type(ElementObservable<HTMLSelectElement, {key: string | number | T, value: T}>) */
-    const observable = new ElementObservable(selection, () => dataEntry);
+    const observable = new ElementObservable(selection, () => dataEntry, (data) => {
+        const key = data.key;
+        const options = selection.options;
+
+        for (let index = 0; index < options.length; index++) {
+            const element = options[index];
+
+            if (element.innerText == key || element.innerValue == data.value) {
+                selection.selectedIndex = index;
+                break;
+            }
+        }
+    });
 
     selection.onchange = () => {
         const selectedElement = selection.options[selection.selectedIndex];
@@ -387,26 +400,35 @@ Element.prototype.collapsible = function (tooltip, state, consumer) {
 }
 
 Element.prototype.toggleBtn = function (id, value, onToggle, /** @type(ToggleStyler) */ styler) {
+    var state = value;
+
     if (styler == null) styler = ThemeStorage.peek().toggleStyler;
-    const baseStyles = styler?.initialStyles(value);
+    const baseStyles = styler?.initialStyles(state);
     const button = this.addTo(HTMLButtonElement)
-        .with({id: id, type: 'button', attr: {role: 'switch', 'aria-checked': value}})
+        .with({id: id, type: 'button', attr: {role: 'switch', 'aria-checked': state}})
         .setStyle(baseStyles?.btnStyle ?? null);
+
 
     const knob = button.addTo(HTMLSpanElement)
         .setStyle(baseStyles?.spanStyle ?? null);
 
     button.addEventListener('click', () => {
-        value = !value;
+        const value = !state;
         if(onToggle != null) onToggle(value);
+        setState(value);
+    });
 
+    function setState(value) {
+        state = value;
         // Update Accessibility
         button.setAttribute('aria-checked', value);
 
         styler?.onChangeStyler(value, button, knob);
 
         console.log(`${id} is now: ${value}`);
-    });
+    }
+
+    button.setValue = setState;
 
     return button;
 }
@@ -452,9 +474,7 @@ Elements.modal = async function (title, consumer) {
         .with({id: "modal-container"})
         .addStyle({
             styleId: "dialog_container",
-            style: {
-                width: ""
-            }
+            style: { width: "" }
         });
 
     const header = container.div(container)
@@ -515,7 +535,7 @@ Element.prototype.editBox = function (id, innerText, contentEditable) {
             className: 'cm-editor ͼ1 ͼ2 ͼ4'
         });
 
-    return outerDiv.div()
+    const innerBox = outerDiv.div()
         .addStyle({styleId: "edit_box_div"})
         .with({
             id: `${id}-contents`,
@@ -532,8 +552,13 @@ Element.prototype.editBox = function (id, innerText, contentEditable) {
                 //'aria-placeholder': 'Reply to thread...',
                 //'data-language': 'markdown',
             },
-            innerText: innerText ?? ""
+            textContent: innerText ?? ""
         });
+
+    outerDiv.setValue = (value) => innerBox.textContent = value;
+    outerDiv.getValue = () => innerBox.textContent;
+
+    return outerDiv;
 }
 
 class ThemeStorage {

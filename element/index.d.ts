@@ -33,14 +33,23 @@ interface Element {
     collapsible(tooltip: string, state: Observable<boolean>, consumer: (parent: HTMLDivElement) => void): HTMLDivElement;
 
     detail(title: string, titleClassName: string?): HTMLDetailsElement;
-    editBox(id: string, innerText: string, canEditContents: boolean): HTMLDivElement;
+    editBox(id: string, innerText: string, canEditContents: boolean): HTMLEditBox;
 
     btn(name: string, color: string, action: (btn: HTMLButtonElement, ev: PointerEvent) => any): HTMLButtonElement
-    toggleBtn(id: string, value: boolean, onToggle: (value: boolean, btn: HTMLButtonElement, span: HTMLSpanElement) => void, styler: ToggleStyler): HTMLButtonElement;
+    toggleBtn(id: string, value: boolean, onToggle: ((value: boolean, btn: HTMLButtonElement, span: HTMLSpanElement) => void)?, styler: ToggleStyler?): HTMLToggleElement;
 
     selection<T>(options: Collection<T>, defaultOption: string|number|T, entryHandler: EntryHandler?): ElementObservable<HTMLSelectElement, {key: string | number | T, value: T}>
     dataListInput(id: string, placeholder: string,  options: Collection<string>, defaultValue: string, width: string): HTMLInputElement;
     input(type: string, placeholder: string, defaultValue: string): HTMLInputElement;
+}
+
+interface HTMLEditBox extends HTMLDivElement {
+    setValue(value: string);
+    getValue(): string
+}
+
+interface HTMLToggleElement extends HTMLButtonElement {
+    setValue(value: boolean);
 }
 
 type StyleData = {
