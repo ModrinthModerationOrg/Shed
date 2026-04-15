@@ -151,10 +151,10 @@ const monkey = {
      * @param {{[key: string]: string} | undefined}                                          header - extra headers (auth is added automatically!)
      * @param {(Object) => T}                                                                handler - Function that handles the response data and turns it into the required data
      * @param {((type: string, url: string, error: string|number|Object) => T) | undefined}  onError - Function to handle errors of either caused by the handling of the response or from the request call
-     * @returns {Promise<T | undefined>}
+     * @returns {Promise<T|undefined>}
      */
     getDataFrom(url, type, headers, handler = (data) => data.response, onError) {
-        return this.requestFrom(url, {method: "get", type: type, headers: headers, handler: handler, onError: (onError ?? this.onGetResponseError)});
+        return this.requestFrom(url, {method: "get", type: type, headers: headers, handler: handler, onError: (onError ?? this.onGetResponseError.bind(this))});
     },
     /**
      * @template T
@@ -177,7 +177,7 @@ const monkey = {
      * @returns {Promise<T>}
      */
     async requestFrom(url, /** @type(MonkeyRequestData<T>) */ {method = "get", type, allowedStatuses = generalStatusCodeRange, headers, data, handler, onError} = {}) {
-        app.debug(`[${method}, ${type}]: ${url}`);
+        this.debug("Request From Info", `[${method}, ${type}]: ${url}`);
         if (!url) return onError("Invalid URL given as its null");
         return await new Promise((resolve, reject) => {
             GM_xmlhttpRequest({
@@ -199,12 +199,16 @@ const monkey = {
             });
         });
     },
+    /** @private */
     onGetResponseError(type, url, msg) {
         this.error(`${type} Fetcher`, `Unable to get the desired ${type} from '${url}' due to the following error: ${(msg instanceof Object ? JSON.stringify(obj, 2) : msg)}`)
         return undefined;
     },
     error: (title, message) => {
         console.error(`${title}: ${message}`)
+    },
+    debug: (title, message) => {
+        console.debug(`${title}: ${message}`)
     },
     settings: new Settings(),
     /**
