@@ -121,6 +121,19 @@ class CachedSetting extends Observable {
 // #endregion
 
 // #region Monkey Object Def
+
+/**
+ * @import { } from './monkey_utils' 
+ */
+
+const ErrorType = Object.freeze({
+    ERROR = "error",
+    ABORT = "abort",
+    TIMEOUT = "timeout",
+    INVALID_STATUS = "invalid_status",
+    HANDLER_ERROR = "handler_error"
+})
+
 const monkey = {
     /**
      * Method used to send http requests from within this tamper monkey script
@@ -154,7 +167,12 @@ const monkey = {
      * @returns {Promise<T|undefined>}
      */
     getDataFrom(url, type, headers, handler = (data) => data.response, onError) {
-        return this.requestFrom(url, {method: "get", type: type, headers: headers, handler: handler, onError: (onError ?? this.onGetResponseError.bind(this))});
+        return this.requestFrom(url, {method: "get", type: type, headers: headers, handler: handler, onError: (onError ?? ((obj, errType) => {
+            const error = obj instanceof Error ? obj : undefined;
+            const msg = obj instanceof Error ? obj.message : (obj instanceof Object ? JSON.stringify(obj, 2) : obj)
+            this.error(`Fetcher Error`, `Fetching ${type} data from '${url}' lead to the following '${errType}' error: ${msg}`, error)
+            return undefined;
+        }))});
     },
     /**
      * @template T
@@ -165,7 +183,7 @@ const monkey = {
      * @property {{[key: string]: string} | undefined}                                                    headers - extra headers (auth is added automatically!)
      * @property {string | Blob | File | Object | Array<any> | FormData | URLSearchpropertys | undefined} data - request body for PATCH/POST
      * @property {(Object) => T}                                                                          handler - Function that handles the response data and turns it into the required data
-     * @property {(type: string, url: string, error: string|number|Object) => T}                          onError - Function to handle errors of either caused by the handling of the response or from the request call
+     * @property {(error: Object|Error, type: ErrorType) => T}                          onError - Function to handle errors of either caused by the handling of the response or from the request call
      */
     /**
      * Method used to send http requests from within a tamper monkey script using {@link GM_xmlhttpRequest}
@@ -187,28 +205,23 @@ const monkey = {
                         try {
                             resolve(handler(response))
                         } catch (error) {
-                            resolve(onError(type, url, error.message))
+                            resolve(onError(error, ErrorType.HANDLER_ERROR))
                         }
                     } else {
-                        resolve(onError(type, url, response.status))
+                        resolve(onError(response, ErrorType.INVALID_STATUS))
                     }
                 },
-                onerror: function(response) { resolve(onError(type, url, response)) },
-                onabort: function(response) { resolve(onError(type, url, response)) },
-                ontimeout: function(response) { resolve(onError(type, url, response)) },
+                onerror: function(response) { resolve(onError(response, ErrorType.ERROR)) },
+                onabort: function(response) { resolve(onError(response, ErrorType.ABORT)) },
+                ontimeout: function(response) { resolve(onError(response, ErrorType.TIMEOUT)) },
             });
         });
     },
-    /** @private */
-    onGetResponseError(type, url, msg) {
-        this.error(`${type} Fetcher`, `Unable to get the desired ${type} from '${url}' due to the following error: ${(msg instanceof Object ? JSON.stringify(obj, 2) : msg)}`)
-        return undefined;
+    error: (title, message, error) => {
+        console.error(`${title}: ${message}`, error)
     },
-    error: (title, message) => {
-        console.error(`${title}: ${message}`)
-    },
-    debug: (title, message) => {
-        console.debug(`${title}: ${message}`)
+    debug: (title, message, error) => {
+        console.debug(`${title}: ${message}`, error)
     },
     settings: new Settings(),
     /**
