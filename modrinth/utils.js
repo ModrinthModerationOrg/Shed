@@ -533,12 +533,11 @@ const app = {
      * 
      * @param        {string}     path - path for the api request
      * @param        {object}   params - query string params
-     * @param        {object}     body - request body for PATCH/POST
      * @param        {object}  headers - extra headers (auth is added automatically!)
      * @param       {boolean} skipAuth - opt out of auto-auth useful for public endpoints
      */
-    labrinthGetRequest(path, params, body, headers, skipAuth) {
-        return this.request('labrinth', 3, 'GET', path, params, body, headers, skipAuth)
+    labrinthGetRequest(path, params, headers, skipAuth) {
+        return this.request('labrinth', 3, 'GET', path, params, null, headers, skipAuth)
     },
     /**
      * @param {string} url - Url of the given project on modrinth

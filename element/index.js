@@ -257,7 +257,7 @@ Element.prototype.dataListInput = function (id, placeholder, options, defaultVal
 
     this.addTo(HTMLDataListElement)
         .with({id: id, })
-        .updateSelections(options, EntryHandler.KEY_KEY);
+        .updateSelections(options, EntryHandler.VALUE_VALUE);
 
     return input;
 }
