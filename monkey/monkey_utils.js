@@ -161,7 +161,7 @@ const monkey = {
      * Method used to send http requests from within this tamper monkey script
      * 
      * @template T
-     * @param {"arraybuffer", "blob", "json", "stream", "text" or undefined} type - type of data to be returned from the response
+     * @param {"arraybuffer" | "blob" | "json" | "stream" | "text" | undefined} type - type of data to be returned from the response
      * @param {string}                                                       url - url target for the request
      * @param {{[key: string]: string} | undefined}                          header - extra headers (auth is added automatically!)
      * @param {(Object) => T}                                                handler - Function that handles the response data and turns it into the required data
@@ -171,8 +171,9 @@ const monkey = {
     getDataFrom(url, type, headers, handler = (data) => data.response, onError) {
         return this.requestFrom(url, {method: "get", type: type, headers: headers, handler: handler, onError: (onError ?? ((obj, errType) => {
             const error = obj instanceof Error ? obj : undefined;
-            const msg = obj instanceof Error ? obj.message : (obj instanceof Object ? JSON.stringify(obj, 2) : obj)
+            const msg = obj instanceof Error ? obj.message : JSON.stringify(obj, 2)
             this.error(`Fetcher Error`, `Fetching ${type} data from '${url}' lead to the following '${errType}' error: ${msg}`, error)
+            console.error(obj);
             return undefined;
         }))});
     },
