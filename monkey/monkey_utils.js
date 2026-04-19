@@ -19,17 +19,12 @@ const XMLResponseType = Object.freeze({
     STREAM: "stream",
 })
 
+/**
+ * @type {Monkey}
+ */
 const monkey = {
     /**
      * Method used to send http requests from within this tamper monkey script
-     * 
-     * @template T
-     * @param {DataType<T>?}            type - type of data to be returned from the response
-     * @param {string}                               url - url target for the request
-     * @param {{[key: string]: string} | undefined}  header - extra headers (auth is added automatically!)
-     * @param {((request: GMXMLRequest<T>) => T)?}      handler - Function that handles the response data and turns it into the required data
-     * @param {RequestErrorHandler<T>?}                 onError - Function to handle errors of either caused by the handling of the response or from the request call
-     * @returns {Promise<T|undefined>}
      */
     getDataFrom(url, type, /** @type(BaseMonkeyRequestData<T>) */ {headers, handler, onError, allowedStatuses} = {}) {
         return this.requestFrom(url, {method: "get", type, headers, allowedStatuses,
@@ -44,12 +39,6 @@ const monkey = {
     },
     /**
      * Method used to send http requests from within a tamper monkey script using {@link GM_xmlhttpRequest}
-     * 
-     * See {@link MonkeyRequestData} for info on other paramaters of the method
-     * 
-     * @template T
-     * @param {string} url - url target for the request
-     * @returns {Promise<T>}
      */
     async requestFrom(url, /** @type(MonkeyRequestData<T>) */ {method = "get", type = XMLResponseType.TEXT, allowedStatuses = generalStatusCodeRange, headers, data, handler, onError} = {}) {
         this.debug("Request From Info", `[${method}, ${type}]: ${url}`)
