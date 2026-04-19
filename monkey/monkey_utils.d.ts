@@ -9,12 +9,12 @@ declare enum ErrorType {
     INVALID_STATUS = "invalid_status",
     HANDLER_ERROR = "handler_error",
 }
-declare interface XMLResponseType {
-    readonly ARRAYBUFFER: DataType<ArrayBuffer>;
-    readonly TEXT: DataType<string>;
-    readonly JSON: DataType<Record<string, any>>;
-    readonly BLOB: DataType<Blob>;
-    readonly STREAM: DataType<any>; // TODO: FIGURE OUT WHAT TYPE THIS IS 
+declare class XMLResponseType {
+    static readonly ARRAYBUFFER: DataType<ArrayBuffer>;
+    static readonly TEXT: DataType<string>;
+    static readonly JSON: DataType<Record<string, any>>;
+    static readonly BLOB: DataType<Blob>;
+    static readonly STREAM: DataType<any>; // TODO: FIGURE OUT WHAT TYPE THIS IS 
 } 
 
 declare type RequestErrorHandler<T> = ((error: GMXMLRequest<T> | null, type: ErrorType, thrownError?: Error) => T);
