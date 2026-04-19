@@ -1,127 +1,3 @@
-// #region Monkey Settings Def
-class Settings {
-    /**
-     * @template T
-     * @param {string} key - Key within the settings
-     * @param {T} defaultValue - value to be gotten as a default
-     * @returns {T}
-     */
-    get(key, defaultValue) { return GM_getValue(key, defaultValue); }
-    /**
-     * @template T
-     * @param {string} key - Key within the settings
-     * @param {T} value - value to be set
-     * @returns {T}
-     */
-    set(key, value)  { 
-        GM_setValue(key, value);
-        return value;
-    }
-    /**
-     * @template T
-     * @param {string} key - Key within the settings
-     * @param {T} value - value to be set
-     * @returns {void}
-     */
-    delete(key) { GM_deleteValue(key); }
-    /**
-     * @template T
-     * @param {Collection<T>} obj
-     * @param {string} settingKey 
-     * @param {string} defaultObjKey 
-     * @returns {T}
-     */
-    getValidated(obj, settingKey, defaultKey) { return getFromCollectionValidated(obj, this.get(settingKey, defaultKey), defaultKey); }
-    /**
-     * @template T
-     * @param {Collection<T>} obj
-     * @param {string} settingKey 
-     * @param {string} objKey 
-     * @param {string} defaultKey 
-     * @returns {string}
-     */
-    setValidated(obj, settingKey, objKey, defaultKey) { 
-        return this.set(settingKey, validateKeyWithCollection(obj, objKey, defaultKey));
-    }
-    /**
-     * @template T
-     * @param {string} key 
-     * @param {(key: string, oldValue: T, newValue: T)} callback 
-     * @returns {string}
-     */
-    onMutation(key, callback) {
-        GM_addValueChangeListener(key, (key, oldValue, newValue) => callback(key, oldValue, newValue));
-    }
-    /**
-     * @template T
-     * @param {string} key
-     * @param {T} defaultValue
-     * @param {((object) => T) | undefined} decoder
-     * @param {((T) => object) | undefined} encoder
-     * @returns {Promise<CachedSetting<T>>}
-     */
-    async of(key, defaultValue, decoder = (obj) => obj, encoder = (obj) => obj) {
-        const setting = new CachedSetting(this, key, defaultValue, decoder, encoder);
-        await setting.valueSetGate;
-        return setting;
-    }
-}
-
-/**
- * @template T
- * @extends {Observable<T>}
- */
-class CachedSetting extends Observable {
-    /** 
-     * @type(string) 
-     * */
-    key;
-    /** 
-     * @type(T) 
-     * */
-    defaultValue;
-    /** 
-     * @private
-     * @type(T) 
-     * */
-    value;
-    /**
-     * @private
-     * @type(Promise<void>)
-     */
-    valueSetGate;
-
-    /**
-     * @constructor
-     * @param {Settings} settings
-     * @param {string} key
-     * @param {T} defaultValue
-
-     * @param {((T) => object) | undefined} encoder
-     */
-    constructor (settings, key, defaultValue, decoder = (obj) => obj, encoder = (obj) => obj) {
-        super(() => this.value, (value) => settings.set(key, encoder(value)));
-        this.key = key;
-        this.defaultValue = defaultValue;
-        this.valueSetGate = this.#setupValue(settings.get(key), defaultValue, decoder);
-        settings.onMutation(key, async (key, oldValue, newValue) => {
-            this.value = await decoder(newValue);
-            this.onChangeInvoker(this.value);
-        })
-    }
-
-    /**
-     * @param {((object) => T | Promise<T>) | undefined} decoder
-     */
-    async #setupValue(rawValue, defaultValue, decoder) {
-        this.value = (rawValue != null) ? await decoder(rawValue) : defaultValue;
-    }
-}
-
-// #endregion
-
-// #region Monkey Object Def
-
 /** @import { ErrorType, XMLResponseType, RequestErrorHandler, MonkeyRequestData } from './monkey_utils' */
 /** @import { generalStatusCodeRange } from '../misc/index' */
 
@@ -142,10 +18,6 @@ const XMLResponseType = Object.freeze({
     BLOB: "blob" ,
     STREAM: "stream",
 })
-
-/**
- * 
- */
 
 const monkey = {
     /**
@@ -203,13 +75,81 @@ const monkey = {
     },
     error: (title, message, error) => { console.error(`${title}: ${message}`, error) },
     debug: (title, message, error) => { console.debug(`${title}: ${message}`, error) },
-    settings: new Settings(),
+    settings: /** @type(Settings) */ ({
+        get(key, defaultValue) { 
+            return GM_getValue(key, defaultValue); 
+        },
+        set(key, value)  { 
+            GM_setValue(key, value);
+            return value;
+        },
+        delete(key) { 
+            GM_deleteValue(key); 
+        },
+        getValidated(obj, settingKey, defaultKey) {
+            return getFromCollectionValidated(obj, this.get(settingKey, defaultKey), defaultKey); 
+        },
+        setValidated(obj, settingKey, objKey, defaultKey) { 
+            return this.set(settingKey, validateKeyWithCollection(obj, objKey, defaultKey));
+        },
+        onMutation(key, callback) {
+            GM_addValueChangeListener(key, (key, oldValue, newValue) => callback(key, oldValue, newValue));
+        },
+        of(key, defaultValue, decoder = (obj) => obj, encoder = (obj) => obj) {
+            return new CachedSetting(this, key, defaultValue, decoder, encoder).selfRef;
+        },
+    }),
     /**
      * Method used to add the given CSS to the document using {@link GM_addStyle}
      * @param {string} css - The CSS string to inject.
      * @returns {HTMLStyleElement} The injected style element.
      */
     addStyle: GM_addStyle
+}
+
+class CachedSetting extends Observable {
+    key;
+    defaultValue;
+    value;
+    /**
+     * @private
+     * @type(this|Promise<this>)
+     */
+    #selfRef;
+
+    /**
+     * @constructor
+     * @param {Settings} settings
+     * @param {string} key
+     * @param {T} defaultValue
+     * @param {((T) => object) | undefined} encoder
+     */
+    constructor (settings, key, defaultValue, decoder = (obj) => obj, encoder = (obj) => obj) {
+        super(() => this.value, async (value) => settings.set(key, await encoder(value)));
+        this.key = key;
+        this.defaultValue = defaultValue;
+        this.#selfRef = this.#setupValue(settings.get(key), defaultValue, decoder);
+        settings.onMutation(key, async (key, oldValue, newValue) => {
+            this.value = await decoder(newValue);
+            this.onChangeInvoker(this.value);
+        })
+    }
+
+    /**
+     * @param {((object) => T | Promise<T>) | undefined} decoder
+     */
+    #setupValue(rawValue, defaultValue, decoder) {
+        const result = (rawValue != null) ? decoder(rawValue) : defaultValue;
+        if (result.then === 'function') {
+            return /**@type(Promise<T>)*/ Promise.resolve(result).then((value) => {
+                this.value = value;
+                return this;
+            })
+        } else {
+            this.value = result;
+            return this;
+        }
+    }
 }
 
 //#endregion
