@@ -11,7 +11,7 @@ class StateManager {
     project = () => null;
 
     async projectId() { 
-        const project = project();
+        const project = this.project();
 
         return project != null ? project.id : null;
     }
@@ -33,7 +33,7 @@ class StateManager {
 
         this.onRouteChangeCallbacks.set(id, callback)
 
-        if (this.#isSetup) callback(this, this.currentRoute, this.prevRoute)
+        if (this.isSetup) callback(this, this.currentRoute, this.prevRoute)
         return true;
     }
 
@@ -158,7 +158,7 @@ const app = {
     },
     async notificationManager() { return (await this.getAppProviders()).notificationManager },
     async client() { return (await this.getAppProviders()).modrinthClient },
-    async nuxtRouter() { return (await this.getNuxt()).$router },
+    async router() { return (await this.getNuxt()).$router },
     async queryClient() { return (await this.getContext()).provides.VUE_QUERY_CLIENT },
     waitForQuery(filters) {
         return new Promise(async (resolve) => {
@@ -210,7 +210,7 @@ const app = {
         })
     },
     showDebugToast: () => false,
-    request(path, requestData) {
+    request(path, requestData = {api: "labrinth", method: "GET", version: 3}) {
         this.debug("Modrinth API Request", `Running ${requestData.api} Request ${requestData.method} v${requestData.version} at path ${path}`)
         try {
             return this.client()
