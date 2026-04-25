@@ -1,85 +1,128 @@
-/**
- * Represents a function that accepts one argument and produces a result.
- * 
- * @template T
- * @callback OnMutation
- * @param {T} value
- * @return {void} 
- */
-
-/**
- * @template T
- */
 class Observable {
-    /** @type(Array<OnMutation<T>>) */
-    listeners = [];
-    /** @readonly @type(() => T) */
-    get;
-    /** @readonly @type((T) => T) */
-    set;
+    static of(startingValue) {
+        var value = startingValue;
+        return new Observable(() => value, (newValue) => value = newValue);
+    }
 
-    /**
-     * @constructor
-     * @param {() => T} getCallback
-     * @param {((value: T) => T)?} setCallback
-     */
-    constructor (getCallback, setCallback) {
+    static and(...observables){
+        const wrapper = new Observable(() => {
+            for (const observable of observables) {
+                if (!observable.get()) return false;
+            }
+            return true;
+        });
+
+        const onChange = (value) => wrapper.onChangeInvoker(wrapper.get());
+        observables.forEach((observable) => observable.onChange(onChange));
+
+        return wrapper;
+    }
+
+    static or(...observables){
+        const wrapper = new Observable(() => {
+            for (const observable of observables) {
+                if (observable.get()) return true;
+            }
+            return false;
+        });
+
+        const onChange = (value) => wrapper.onChangeInvoker(wrapper.get());
+        observables.forEach((observable) => observable.onChange(onChange));
+
+        return wrapper;
+    }
+
+    constructor (getCallback, setCallback, runChangeCallbackOnSet) {
         this.get = getCallback;
         this.set = (value) => {
             if (setCallback != null) setCallback(value);
-            this.onChangeInvoker(value);
-            return value;
+            if (runChangeCallbackOnSet ?? true) this.#onChangeInvoker(value);
         };
     }
 
-    /**
-     * @param {OnMutation<T>} callback 
-     */
     onChange(callback) {
-        this.listeners.push(callback)
+        (this.listeners ??= []).push(callback)
         return this;
     };
     
-    /** 
-     * @protected
-     * @type(OnMutation<T>) 
-     */
-    onChangeInvoker = (value) => {
-        for (const callback of this.listeners) {
+    /** @private */
+    onChangeInvoker(value) {
+        for (const callback of this.listeners ?? []) {
             callback(value)
         }
     }
 }
 
+const _fallThoughEndec = { decode: (value) => value, encode: (value) => value, }
 
-/**
- * @template T
- * @param {Collection<T>} obj
- * @param {string} objKey 
- * @param {string} defaultObjKey 
- * @returns {T}
- */
+class Setting extends Observable {
+    key;
+    defaultValue;
+    endec;
+
+    /** @private */ 
+    value;
+
+    /** @private @type(Promise<T>|null) */
+    valueSetLock;
+
+    constructor (settings, key, defaultValue, endec = _fallThoughEndec) {
+        super(() => this.value, async (value) => settings.set(key, await (endec.encode(value))), false);
+        this.key = key;
+        this.defaultValue = defaultValue;
+        this.endec = endec;
+        this.valueSetLock = this.#setupValue(settings, defaultValue);
+        settings.onMutation(key, async (key, oldValue, newValue) => {
+            onChangeInvoker(this.value = await (endec.decode(newValue)));
+        })
+    }
+
+    /**
+     * @param {((object) => T | Promise<T>) | undefined} decoder
+     */
+    #setupValue(settings) {
+        const rawValue = settings.get(key);
+        const result = /** @type(T) */ ((rawValue != null) ? decoder(rawValue) : this.defaultValue);
+        if (result.then != null) {
+            return Promise.resolve(result).then((value) => this.value = value)
+        } else {
+            this.value = result;
+        }
+        
+        return null;
+    }
+
+    static of(settings, key, defaultValue, endec = _fallThoughEndec) {
+        const setting = new CachedSetting(settings, key, defaultValue, endec);
+        if (setting.valueSetLock == null) return setting;
+        const lock = setting.valueSetLock;
+        setting.valueSetLock = null;
+        return lock.then((obj) => setting);
+    }
+}
+
+class Endec {
+    constructor(decode, encode) {
+        this.decode = decode;
+        this.encode = encode;
+    }
+}
+
+class AsyncEndec {
+    constructor(decode, encode) {
+        this.decode = decode;
+        this.encode = encode;
+    }
+}
+
 function getFromCollectionValidated(obj, key, defaultKey) {
     return getFromCollection(obj, validateKeyWithCollection(obj, key, defaultKey));
 }
 
-/**
- * @template T
- * @param {Collection<T>} obj
- * @param {string} key 
- * @returns {T}
- */
 function getFromCollection(obj, key) {
     return Array.isArray(obj) ? key : (obj instanceof Map ? obj.get(key) : obj[key]) ;
 }
 
-/**
- * @template T
- * @param {Collection<T>} obj
- * @param {string} objKey 
- * @param {string} defaultObjKey 
- * @returns {T}
- */
 function validateKeyWithCollection(obj, key, defaultKey) {
     /*** @type(Array<string>) */
     const array = Array.isArray(obj) ? obj : (obj instanceof Map ? Array.from(obj.keys()) : Object.keys(obj));
@@ -87,46 +130,27 @@ function validateKeyWithCollection(obj, key, defaultKey) {
     return key;
 }
 
-/**
- * @param {number} status 
- */
 function generalStatusCodeRange(status) {
     return status >= 200 && status < 300
 }
 
-/**
- * @template {TreeNode<N>} N
- */
+
 class TreeNode {
-    /** @type {TreeNode<N>?} */
     parent;
-
-    /** @type {Map<string, N>} */
     children = new Map();
-
-    /** @type {string} */
     name;
-
-    /** @type {string} */
     path;
 
-    /**
-     * @param {string} name
-     * @param {string} path
-     * @param {TreeNode<N>?} parent
-     */
     constructor(parent, name, path) {
         this.parent = parent;
         this.name = name;
         this.path = path;
     }
 
-    /**
-     * @param {((a: N, b: N) => number) | undefined} compare 
-     */
     sort(compare) {
         this.children = new Map(Array.from(this.children.entries()).sort((entry1, entry2) => compare(entry1[1], entry2[1])));
-        for (const value of this.children.values()) value.sort(compare)
+        for (const value of this.children.values()) value.sort(compare);
+        return this;
     }
 }
 
