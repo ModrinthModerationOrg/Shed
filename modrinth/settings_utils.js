@@ -5,9 +5,10 @@ const _fallThoughEndec = { decode: (value) => value, encode: (value) => value, }
 
 /** @type {SettingsElementsUtils} */
 const settingsElements = {
-    mergeAs(element) {
+    mergeAs(element, oncloseHook) {
         const addToBase = element.addTo.bind(element);
-        element.mergeAs(null, /** @type {SettingsElementMaker & Element} */ ({
+        return element.mergeAs(null, /** @type {SettingsElementMaker & Element} */ ({
+            oncloseHook: oncloseHook,
             textBox(name, setting, options) {
                 if (options != null && options.showDefaultValue == null) options.showDefaultValue = false;
                 return this.base(name, setting, (parent) => {
@@ -62,14 +63,14 @@ const settingsElements = {
                 }, options)
             },
             toggle(name, setting, options) {
-                return base(name, setting, (parent, defaultStateSpan) => {
+                return this.base(name, setting, (parent, defaultStateSpan) => {
                     defaultStateSpan.className = `text-${(setting.defaultValue ? "green" : "red")}`
                     parent.toggleBtn(setting.key, setting.get(), setting.set)
                         .modify((btn) => setting.onChange(btn.setValue))
                 }, options)
             },
             base(name, setting, controlBuilder, options = {}) {
-                return this.labeledOption(name, (wrapper, label) => {
+                this.labeledOption(name, (wrapper, label) => {
                     const p = label.addTo(HTMLParagraphElement).addStyle({ className: "m-0 text-secondary"}, false);
                 
                     if (options.showDefaultValue ?? true) p.append(" Default: ");
@@ -104,9 +105,11 @@ const settingsElements = {
 
                     controlBuilder(optionHolder, defaultStateSpan)
                 })
+
+                return this;
             },
             labeledOption(name, controlBuilder) {
-                return this.div()
+                this.div()
                     .addStyle({
                         styleId: styles.bordered_flex,
                         style: {
@@ -130,19 +133,28 @@ const settingsElements = {
 
                         controlBuilder(wrapper, label);
                     });
+
+                return this;
             },
             dependentSetting: null,
             dependentOn(setting, builder) {
-                dependentSetting = setting;
-                builder();
-                dependentSetting = null;
+                this.dependentSetting = setting;
+                builder(this);
+                this.dependentSetting = null;
             },
             addTo(type, tag) {
                 const element = addToBase(type, tag);
 
-                if(dependentSetting != null) element.displayAs(dependentSetting);
+                if(this.dependentSetting != null && element.displayIf) element.displayIf(this.dependentSetting);
 
                 return element;
+            },
+            group({name, headerType, direction}, builder){
+                if (name != null) this.header(headerType, name);
+
+                builder(settingsElements.mergeAs(direction == "column" ? this.column() : this.row(), this.oncloseHook));
+
+                return this;
             }
         }))
     }
