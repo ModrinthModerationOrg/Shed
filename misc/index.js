@@ -81,8 +81,8 @@ class Setting extends Observable {
      * @param {((object) => T | Promise<T>) | undefined} decoder
      */
     #setupValue(settings) {
-        const rawValue = settings.get(key);
-        const result = /** @type(T) */ ((rawValue != null) ? decoder(rawValue) : this.defaultValue);
+        const rawValue = settings.get(this.key);
+        const result = /** @type(T) */ ((rawValue != null) ? this.endec.decode(rawValue) : this.defaultValue);
         if (result.then != null) {
             return Promise.resolve(result).then((value) => this.value = value)
         } else {
@@ -93,7 +93,7 @@ class Setting extends Observable {
     }
 
     static of(settings, key, defaultValue, endec = _fallThoughEndec) {
-        const setting = new CachedSetting(settings, key, defaultValue, endec);
+        const setting = new Setting(settings, key, defaultValue, endec);
         if (setting.valueSetLock == null) return setting;
         const lock = setting.valueSetLock;
         setting.valueSetLock = null;
