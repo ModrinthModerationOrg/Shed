@@ -23,8 +23,8 @@ declare interface Settings {
     get<T>(key: string): T;
     set<T>(key: string, value: T): T;
     onMutation<T>(key: string, callback: (key: string, oldValue: T, newValue: T) => void): void;
-    of<T>(key: string, defaultValue: T, endec?: Endec<T>): Setting<T>;
-    of<T>(key: string, defaultValue: T, endec?: AsyncEndec<T>): Promise<Setting<T>>;
+    of<T>(key: string, defaultValue: T, endec?: Endec<T, any>): Setting<T>;
+    of<T>(key: string, defaultValue: T, endec?: AsyncEndec<T, any>): Promise<Setting<T>>;
 }
 
 declare abstract class Setting<T> extends Observable<T> {
@@ -32,16 +32,16 @@ declare abstract class Setting<T> extends Observable<T> {
     get defaultValue(): T;
     get endec(): Endec<T>;
 
-    constructor (settings: Settings, key: string, defaultValue: T, endec?: Endec<T>|AsyncEndec<T>);
+    constructor (settings: Settings, key: string, defaultValue: T, endec?: Endec<T, any>|AsyncEndec<T, any>);
 
-    static of<T>(settings: Settings, key: string, defaultValue: T, endec?: Endec<T>): Setting<T>;
-    static of<T>(settings: Settings, key: string, defaultValue: T, endec?: AsyncEndec<T>): Promise<Setting<T>>;
+    static of<T>(settings: Settings, key: string, defaultValue: T, endec?: Endec<T, any>): Setting<T>;
+    static of<T>(settings: Settings, key: string, defaultValue: T, endec?: AsyncEndec<T, any>): Promise<Setting<T>>;
 }
 
-declare class Endec<T> {
-    constructor (decode: (value: any) => T, encode: (value: T) => any);
-    decode(value: any): T;
-    encode(value: T ): object;
+declare class Endec<T, B> {
+    constructor (decode: (value: B) => T, encode: (value: T) => B);
+    decode(value: B): T;
+    encode(value: T ): B;
 }
 
 declare class AsyncEndec<T> {

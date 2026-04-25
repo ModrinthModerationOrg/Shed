@@ -1,8 +1,3 @@
-/**
- * @private
- */
-const _fallThoughEndec = { decode: (value) => value, encode: (value) => value, }
-
 /** @type {SettingsElementsUtils} */
 const settingsElements = {
     mergeAs(element, oncloseHook) {
