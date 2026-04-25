@@ -36,7 +36,7 @@ class Observable {
         this.get = getCallback;
         this.set = (value) => {
             if (setCallback != null) setCallback(value);
-            if (runChangeCallbackOnSet ?? true) this.#onChangeInvoker(value);
+            if (runChangeCallbackOnSet ?? true) this.onChangeInvoker(value);
         };
     }
 
