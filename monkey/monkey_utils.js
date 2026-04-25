@@ -19,14 +19,9 @@ const XMLResponseType = Object.freeze({
     STREAM: "stream",
 })
 
-/**
- * @type {Monkey}
- */
+/** @type {Monkey} */
 const monkey = {
-    /**
-     * Method used to send http requests from within this tamper monkey script
-     */
-    getDataFrom(url, type, /** @type(BaseMonkeyRequestData<T>) */ {headers, handler, onError, allowedStatuses} = {}) {
+    getDataFrom(url, type, {headers, handler, onError, allowedStatuses} = {}) {
         return this.requestFrom(url, {method: "get", type, headers, allowedStatuses,
             handler: handler ?? ((data) => data.response),
             onError: (onError ?? ((obj, errType, thrownError) => {
@@ -37,10 +32,7 @@ const monkey = {
             }))
         });
     },
-    /**
-     * Method used to send http requests from within a tamper monkey script using {@link GM_xmlhttpRequest}
-     */
-    async requestFrom(url, /** @type(MonkeyRequestData<T>) */ {method = "get", type = XMLResponseType.TEXT, allowedStatuses = generalStatusCodeRange, headers, data, handler, onError} = {}) {
+    async requestFrom(url, {method = "get", type = XMLResponseType.TEXT, allowedStatuses = generalStatusCodeRange, headers, data, handler, onError} = {}) {
         this.debug("Request From Info", `[${method}, ${type}]: ${url}`)
         return await new Promise((resolve, reject) => {
             GM_xmlhttpRequest({
@@ -64,7 +56,7 @@ const monkey = {
     },
     error: (title, message, error) => { console.error(`${title}: ${message}`, error) },
     debug: (title, message, error) => { console.debug(`${title}: ${message}`, error) },
-    settings: /** @type(Settings) */ ({
+    settings: {
         get(key, defaultValue) { 
             return GM_getValue(key, defaultValue); 
         },
@@ -84,69 +76,11 @@ const monkey = {
         onMutation(key, callback) {
             GM_addValueChangeListener(key, (key, oldValue, newValue) => callback(key, oldValue, newValue));
         },
-        of(key, defaultValue, decoder = (obj) => obj, encoder = (obj) => obj) {
-            return CachedSetting.of(this, key, defaultValue, decoder, encoder)
+        of(key, defaultValue, endec) {
+            return Setting.of(this, key, defaultValue, endec)
         },
-    }),
-    /**
-     * Method used to add the given CSS to the document using {@link GM_addStyle}
-     * @param {string} css - The CSS string to inject.
-     * @returns {HTMLStyleElement} The injected style element.
-     */
+    },
     addStyle: GM_addStyle
-}
-
-class CachedSetting extends Observable {
-    key;
-    defaultValue;
-    value;
-    /**
-     * @private
-     * @type(Promise<T>|null)
-     */
-    valueSetLock;
-
-    /**
-     * @constructor
-     * @param {Settings} settings
-     * @param {string} key
-     * @param {T} defaultValue
-     * @param {((T) => object) | undefined} encoder
-     */
-    constructor (settings, key, defaultValue, decoder = (obj) => obj, encoder = (obj) => obj) {
-        super(() => this.value, async (value) => settings.set(key, await encoder(value)));
-        this.key = key;
-        this.defaultValue = defaultValue;
-        this.valueSetLock = this.#setupValue(settings.get(key), defaultValue, decoder);
-        settings.onMutation(key, async (key, oldValue, newValue) => {
-            this.value = await decoder(newValue);
-            this.onChangeInvoker(this.value);
-        })
-    }
-
-    /**
-     * @param {((object) => T | Promise<T>) | undefined} decoder
-     */
-    #setupValue(rawValue, defaultValue, decoder) {
-        const result = (rawValue != null) ? decoder(rawValue) : defaultValue;
-        if (result.then != null) {
-            return /**@type(Promise<T>)*/ Promise.resolve(result).then((value) => {
-                return this.value = value;
-            })
-        } else {
-            this.value = result;
-        }
-        
-        return null;
-    }
-
-    static of(settings, key, defaultValue, decoder = (obj) => obj, encoder = (obj) => obj) {
-        const setting = new CachedSetting(settings, key, defaultValue, decoder, encoder);
-        if (setting.valueSetLock == null) return setting;
-        const lock = setting.valueSetLock;
-        setting.valueSetLock = null;
-        return lock.then((obj) => setting);
-    }
 }
 
 //#endregion

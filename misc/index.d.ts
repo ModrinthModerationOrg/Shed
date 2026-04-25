@@ -20,9 +20,11 @@ declare class Observable<T> {
 declare const fallThoughEndec: Endec<any>;
 
 declare interface Settings {
-    get(key: string): any;
-    set(key: string, value: any): any;
-    onMutation(key: string, callback: (key: string, oldValue: any, newValue: any) => void): void
+    get<T>(key: string): T;
+    set<T>(key: string, value: T): T;
+    onMutation<T>(key: string, callback: (key: string, oldValue: T, newValue: T) => void): void;
+    of<T>(key: string, defaultValue: T, endec?: Endec<T>): Setting<T>;
+    of<T>(key: string, defaultValue: T, endec?: AsyncEndec<T>): Promise<Setting<T>>;
 }
 
 declare abstract class Setting<T> extends Observable<T> {
@@ -30,7 +32,7 @@ declare abstract class Setting<T> extends Observable<T> {
     get defaultValue(): T;
     get endec(): Endec<T>;
 
-    constructor (settings: Settings, key: string, defaultValue: T, endec?: Endec<T>);
+    constructor (settings: Settings, key: string, defaultValue: T, endec?: Endec<T>|AsyncEndec<T>);
 
     static of<T>(settings: Settings, key: string, defaultValue: T, endec?: Endec<T>): Setting<T>;
     static of<T>(settings: Settings, key: string, defaultValue: T, endec?: AsyncEndec<T>): Promise<Setting<T>>;
