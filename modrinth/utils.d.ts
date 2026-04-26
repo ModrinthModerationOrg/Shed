@@ -365,6 +365,11 @@ declare interface AppWrapper {
     queryClient(): Promise<QueryClientWrapper>;
     waitForAnyQuery(...filters: QueryFilters[]): Promise<CacheQuery | undefined>;
     waitForAllQuery(...filters: QueryFilters[]): Promise<(CacheQuery | undefined)[]>;
+    fetchQuery<TData = any>(options: { 
+        queryKey: QueryKey, 
+        queryFn: () => Promise<TData>,
+        staleTime?: number 
+    }): Promise<TData>;
     /** Send debug message to conolse and modrinth app */
     debug(title: string, msg : string|object, err?: Error): void,
     /**  Send info message to conolse and modrinth app  */

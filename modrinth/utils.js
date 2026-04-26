@@ -237,6 +237,12 @@ const app = {
             return result;
         })
     },
+    fetchQuery(options) {
+        return this.queryClient().then(async (client) => {
+            console.debug(`Fetching data from cache for '${options.queryKey}'`);
+            return await client.fetchQuery(options);
+        })
+    },
     debug(title, msg, err, silence) { this.infomUser(MessageType.DEBUG, title, msg, err); },
     info(title, msg) { this.infomUser(MessageType.INFO, title, msg); },
     success(title, msg) { this.infomUser(MessageType.SUCCESS, title, msg); },
@@ -288,19 +294,16 @@ const app = {
         return this.projectFor(getSlugFromURL(url))
     },
     projectFor(id, silenceError = false) {
-        return this.queryClient()
-            .then((client) => {
-                return client.fetchQuery({
-                    queryKey: ["project", "v3", id],
-                    queryFn: () => this.request(`/project/${id}`),
-                    staleTime: 300000
-                }).then(obj => {
-                    return validateModrinthResponse(obj, (msg) => {
-                        this.error(`Project Info Getter`, msg, null, silenceError)
-                        return { id: id }
-                    })
-                })
-            });
+        return this.fetchQuery({
+            queryKey: ["project", "v3", id],
+            queryFn: () => this.request(`/project/${id}`),
+            staleTime: 300000
+        }).then(obj => {
+            return validateModrinthResponse(obj, (msg) => {
+                this.error(`Project Info Getter`, msg, null, silenceError)
+                return { id: id }
+            })
+        })
     },
     projectIdFor(id) {
         return this.projectFor(id).then((project) => project.id)
@@ -313,37 +316,31 @@ const app = {
         }
     },
     projectVersionFor(projectId, versionId) {
-        return this.queryClient()
-            .then((client) => {
-                return client.fetchQuery({
-                    queryKey: ["project", projectId, "version", versionId, "v3"],
-                    queryFn: () => this.request(`/project/${projectId}/version/${versionId}`),
-                    staleTime: 300000
-                }).then(obj => {
-                    return validateModrinthResponse(obj, (msg) => {
-                        this.error(`Project Version Getter`, msg)
-                        return {
-                            id: versionId,
-                            project_id: projectId
-                        };
-                    })
-                })
-            });
+        return this.fetchQuery({
+            queryKey: ["project", projectId, "version", versionId, "v3"],
+            queryFn: () => this.request(`/project/${projectId}/version/${versionId}`),
+            staleTime: 300000
+        }).then(obj => {
+            return validateModrinthResponse(obj, (msg) => {
+                this.error(`Project Version Getter`, msg)
+                return {
+                    id: versionId,
+                    project_id: projectId
+                };
+            })
+        })
     },
     projectVersionsFor(projectId) {
-        return this.queryClient()
-            .then((client) => {
-                return client.fetchQuery({
-                    queryKey: ["project", projectId, "versions", "v3"],
-                    queryFn: () => this.request(`/project/${projectId}/version`),
-                    staleTime: 300000
-                }).then(obj => {
-                    return validateModrinthResponse(obj, (msg) => {
-                        this.error(`Project Versions Getter`, msg)
-                        return [];
-                    })
-                })
-            });
+        return this.fetchQuery({
+        queryKey: ["project", projectId, "versions", "v3"],
+            queryFn: () => this.request(`/project/${projectId}/version`),
+            staleTime: 300000
+        }).then(obj => {
+            return validateModrinthResponse(obj, (msg) => {
+                this.error(`Project Versions Getter`, msg)
+                return [];
+            })
+        }) 
     },
     primaryFileUrlsFor(projectId) {
         return this.projectVersionsFor(projectId).then(obj => {
@@ -373,19 +370,16 @@ const app = {
         else                              queryKey = ["team", teamId, "members"]
 
         const projectTarget = organizationTarget.organization != null;
-        return this.queryClient()
-            .then((client) => {
-                return client.fetchQuery({
-                    queryKey: queryKey,
-                    queryFn: () => this.request(`/team/${teamId}/members`),
-                    staleTime: 300000
-                }).then(obj => {
-                    return validateModrinthResponse(obj, (msg) => {
-                        this.error(`Team Members Info Getter`, msg)
-                        return [];
-                    })
-                })
-            });
+        return this.fetchQuery({
+            queryKey: queryKey,
+            queryFn: () => this.request(`/team/${teamId}/members`),
+            staleTime: 300000
+        }).then(obj => {
+            return validateModrinthResponse(obj, (msg) => {
+                this.error(`Team Members Info Getter`, msg)
+                return [];
+            })
+        })
     },
     organizationFor(organizationTarget) {
         const organizationId = organizationTarget.organization || organizationTarget;
@@ -396,50 +390,41 @@ const app = {
         else                                      queryKey = ["organization", organizationId]
 
         const projectTarget = organizationTarget.organization != null;
-        return this.queryClient()
-            .then((client) => {
-                return client.fetchQuery({
-                    queryKey: queryKey,
-                    queryFn: () => this.request(`/organization/${organizationId}`),
-                    staleTime: 300000
-                }).then(obj => {
-                    return validateModrinthResponse(obj, (msg) => {
-                        this.error(`Organization Info Getter`, msg)
-                        return [];
-                    })
-                })
-            });
+        return this.fetchQuery({
+            queryKey: queryKey,
+            queryFn: () => this.request(`/organization/${organizationId}`),
+            staleTime: 300000
+        }).then(obj => {
+            return validateModrinthResponse(obj, (msg) => {
+                this.error(`Organization Info Getter`, msg)
+                return [];
+            })
+        })
     },
     userFor(userID) {
-        return this.queryClient()
-            .then((client) => {
-                return client.fetchQuery({
-                    queryKey: ["user", userID],
-                    queryFn: () => this.request(`/user/${userID}/version`),
-                    staleTime: 300000
-                }).then(obj => {
-                    return validateModrinthResponse(obj, (msg) => {
-                        this.error(`User Info Getter`, msg)
-                        return [];
-                    })
-                })
-            });
+        return this.fetchQuery({
+            queryKey: ["user", userID],
+            queryFn: () => this.request(`/user/${userID}/version`),
+            staleTime: 300000
+        }).then(obj => {
+            return validateModrinthResponse(obj, (msg) => {
+                this.error(`User Info Getter`, msg)
+                return [];
+            })
+        })
     },
     threadFor(threadTarget) {
         const threadId = threadTarget.thread_id ?? threadTarget;
-        return this.queryClient()
-            .then((client) => {
-                return client.fetchQuery({
-                    queryKey: ["thread", threadId],
-                    queryFn: () => this.request(`/thread/${threadId}`),
-                    staleTime: 300000
-                }).then(obj => {
-                    return validateModrinthResponse(obj, (msg) => {
-                        this.error("Thread Getter", error)
-                        return [];
-                    })
-                })
-            });
+        return this.fetchQuery({
+            queryKey: ["thread", threadId],
+            queryFn: () => this.request(`/thread/${threadId}`),
+            staleTime: 300000
+        }).then(obj => {
+            return validateModrinthResponse(obj, (msg) => {
+                this.error("Thread Getter", error)
+                return [];
+            })
+        })
     },
     projectsFromOwner(ownerTarget) {
         var apiPath = "";
@@ -448,19 +433,16 @@ const app = {
         else if (ownerTarget.username) apiPath = `/user/${ownerTarget.id}/projects`
         else                           apiPath = `${ownerTarget}/projects`
 
-        return this.queryClient()
-            .then((client) => {
-                return client.fetchQuery({
-                    queryKey: apiPath.split("/").filter((obj) => obj.length == 0),
-                    queryFn: () => this.request(apiPath),
-                    staleTime: 300000
-                }).then(obj => {
-                    return validateModrinthResponse(obj, (msg) => {
-                        this.error("Projects Owner Getter", error)
-                        return [];
-                    })
-                })
-            });
+        return this.fetchQuery({
+            queryKey: apiPath.split("/").filter((obj) => obj.length > 0),
+            queryFn: () => this.request(apiPath),
+            staleTime: 300000
+        }).then(obj => {
+            return validateModrinthResponse(obj, (msg) => {
+                this.error("Projects Owner Getter", error)
+                return [];
+            })
+        })
     },
     state: new StateManager()
 }
