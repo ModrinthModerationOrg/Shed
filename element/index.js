@@ -429,8 +429,9 @@ Element.prototype.collapsible = function (tooltip, state, consumer) {
             }
     
             const btn = holder.btn("...", "F3E4C9", (btn) => {
-                    state.set(value = !value)
-                    onPress(state.get(), btn);
+                    value = !value;
+                    state.set(value)
+                    onPress(value, btn);
                 })
                 .with({title: tooltip ?? ""})
                 .addStyle({style: { padding: "0px" }});
