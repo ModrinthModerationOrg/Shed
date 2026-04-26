@@ -141,7 +141,8 @@ function getVersionKey(version) {
  * @param {(error: string) => object} onError 
  */
 function validateModrinthResponse(response, onError) {
-    if (response.name == "ModrinthApiError" || response.name == "ModrinthErrorResponse") {
+    console.log(response)
+    if (response.name === "ModrinthApiError" || response.name === "ModrinthServerError") {
         return onError(response);
     } else if(response.error) {
         return onError(`${response.error} - ${response.description}`);
@@ -264,17 +265,17 @@ const app = {
         })
     },
     showDebugToast: () => false,
-    request(path, requestData = {api: "labrinth", method: "GET", version: 3}) {
-        if(!path.includes("thread")) this.debug("Modrinth API Request", `Running ${requestData.api} Request ${requestData.method} v${requestData.version} at path ${path}`)
+    async request(path, requestData = {api: "labrinth", method: "GET", version: 3}) {
         try {
-            return this.client()
-                .then(client => {
-                    return client.request(path, requestData)
-                        .then(result => {
-                            if(!path.includes("thread")) this.debug("Modrinth API Request", `Value of ${requestData.api} Request ${requestData.method} v${requestData.version} at path ${path} is: ${result}`)
-                            return result;
-                        })
-                });
+            this.debug("Modrinth API Request", `Running ${requestData.api} Request ${requestData.method} v${requestData.version} at path ${path}`)
+
+            const client = await this.client();
+
+            const result = await client.request(path, requestData);
+
+            this.debug("Modrinth API Request", `Value of ${requestData.api} Request ${requestData.method} v${requestData.version} at path ${path} is: ${result}`)
+            
+            return result;
         } catch (err) {
             return err;
         }
@@ -285,7 +286,7 @@ const app = {
     projectFromUrl(url) {
         return this.projectFor(getSlugFromURL(url))
     },
-    projectFor(id) {
+    projectFor(id, silenceError = false) {
         return this.queryClient()
             .then((client) => {
                 return client.fetchQuery({
@@ -294,7 +295,7 @@ const app = {
                     staleTime: 300000
                 }).then(obj => {
                     return validateModrinthResponse(obj, (msg) => {
-                        this.error(`Project Info Getter`, msg)
+                        if (!silenceError) this.error(`Project Info Getter`, msg)
                         return { id: id }
                     })
                 })
@@ -305,7 +306,7 @@ const app = {
     },
     projectExists(id) {
         try {
-            return app.projectFor(id).then(obj => obj?.name != null);
+            return this.projectFor(id).then(obj => obj?.name != null);
         } catch (e) {
             return Promise.resolve(false);
         }

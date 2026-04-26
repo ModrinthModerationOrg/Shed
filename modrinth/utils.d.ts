@@ -394,7 +394,7 @@ declare interface AppWrapper {
     request(path: string, requestData: RequestData): Promise<object|ModrinthApiError|Error>;
     projectIdFromURl(url: string): Promise<Identifier>;
     projectFromUrl(url: string): Promise<ModrinthProject>;
-    projectFor(id: Slug|Identifier): Promise<ModrinthProject>;
+    projectFor(id: Slug|Identifier, silenceError: boolean): Promise<ModrinthProject>;
     projectIdFor(id: Slug|Identifier): Promise<Identifier>;
     projectExists(id: Slug|Identifier): Promise<boolean>;
     projectVersionFor(projectId: Slug|Identifier, versionId: Version|Identifier): Promise<ModrinthVersion>;
