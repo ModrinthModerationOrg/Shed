@@ -404,7 +404,7 @@ const app = {
     userFor(userID) {
         return this.fetchQuery({
             queryKey: ["user", userID],
-            queryFn: () => this.request(`/user/${userID}/version`),
+            queryFn: () => this.request(`/user/${userID}`),
             staleTime: 300000
         }).then(obj => {
             return validateModrinthResponse(obj, (msg) => {
