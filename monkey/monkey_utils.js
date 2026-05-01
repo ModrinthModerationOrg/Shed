@@ -36,7 +36,9 @@ const monkey = {
         this.debug("Request From Info", `[${method}, ${type}]: ${url}`)
         return await new Promise((resolve, reject) => {
             GM_xmlhttpRequest({
-                method: method, url: url, responseType: type, headers: { ...(headers ?? {}) }, data: data,
+                method: method, url: url, responseType: type, 
+                headers: headers ? ((typeof headers[Symbol.iterator] === 'function') ? Object.fromEntries(headers) : { ...headers }) : {}, 
+                data: data,
                 onload: function(response) {
                     if (allowedStatuses(response.status)) {
                         try {
